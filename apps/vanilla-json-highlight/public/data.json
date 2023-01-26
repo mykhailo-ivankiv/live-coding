@@ -1,0 +1,23 @@
+{
+  "null": null,
+  "boolean": false,
+  "notBoolean": true,
+  "id": "63d24dad0c8f86267105c95b",
+  "email": "betty_cochran@austex.bike",
+  "username": "betty94",
+  "profile": {
+    "name": "Betty Cochran",
+    "company": "Austex",
+    "dob": "1994-04-18",
+    "address": "51 Brigham Street, Dyckesville, Arizona",
+    "location": {
+      "lat": -71.343008,
+      "long": 157.849098
+    },
+    "about": "Do ullamco voluptate duis consectetur et nostrud exercitation aliquip velit do in quis. Reprehenderit deserunt cillum tempor amet aliqua dolor in."
+  },
+  "apiKey": "7eb99915-eb2a-4c88-9c6d-400edad616ce",
+  "roles": ["guest", "admin"],
+  "createdAt": "2010-01-08T19:40:22.124Z",
+  "updatedAt": "2010-01-09T19:40:22.124Z"
+}
