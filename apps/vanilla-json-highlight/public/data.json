@@ -10,10 +10,7 @@
     "company": "Austex",
     "dob": "1994-04-18",
     "address": "51 Brigham Street, Dyckesville, Arizona",
-    "location": {
-      "lat": -71.343008,
-      "long": 157.849098
-    },
+    "location": { "lat": -71.343008, "long": 157.849098 },
     "about": "Do ullamco voluptate duis consectetur et nostrud exercitation aliquip velit do in quis. Reprehenderit deserunt cillum tempor amet aliqua dolor in."
   },
   "apiKey": "7eb99915-eb2a-4c88-9c6d-400edad616ce",
