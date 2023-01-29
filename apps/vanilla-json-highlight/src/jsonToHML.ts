@@ -1,6 +1,6 @@
 type JSONValue = boolean | string | number | null | Array<JSONValue> | { [key in string]: JSONValue }
 
-const spaces = (n: number) => ' '.repeat(n * 2)
+const spaces = (n: number) => `<span class="text-gray-300">${'  '.repeat(n)}</span>`
 export const jsonToHML = (value: JSONValue, indent: number = 0): string => {
   if (value === null) return `<span class="text-yellow-600">null</span>`
   if (typeof value === 'boolean') return `<span class="text-yellow-600">${value}</span>`
