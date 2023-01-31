@@ -1,0 +1,15 @@
+{
+  "name": "@live/parser-utils",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsup main.ts"
+  },
+  "devDependencies": {
+    "typescript": "5.0.0-beta"
+  },
+  "peerDependencies": {
+    "arcsecond": "^5.0.0"
+  }
+}

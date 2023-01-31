@@ -1,15 +1,17 @@
 {
-  "name": "@live",
+  "name": "@live/root",
   "version": "1.0.0",
-  "description": "",
+  "description": "Monorepo for live codding exercises",
   "main": "index.js",
-  "packageManager": "pnpm@9.3.1",
   "scripts": {
-    "preinstall": "npx only-allow pnpm",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev:vanilla-json-highlight": "pnpm --filter @live/vanilla-json-highlight run dev\n"
+    "preinstall": "npx only-allow pnpm"
   },
   "keywords": [],
   "author": "Mykhailo Ivankiv",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@live/create-app": "workspace:^1.0.0",
+    "@nrwl/nx-cloud": "latest"
+  },
+  "private": true
 }
