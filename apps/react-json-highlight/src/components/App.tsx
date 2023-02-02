@@ -37,7 +37,7 @@ export default function App() {
           <ViewJson json={json} />
         </pre>
         <pre id="json-placeholder-ref" className="text-xs whitespace-pre-wrap bg-gray-100 p-4 rounded-md">
-          {JSON.stringify(JSON.parse(text), null, 2)}
+          {JSON.stringify(json, null, 2)}
         </pre>
       </div>
     </div>

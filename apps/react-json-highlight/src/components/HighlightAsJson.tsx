@@ -33,6 +33,6 @@ export default function HighlightAsJson({ text }: { text: string }) {
       <div>{ast.error}</div>
     </>
   ) : (
-    ast.result
+    <>{ast.result}</>
   )
 }

@@ -3,7 +3,7 @@ import { Fragment } from 'react'
 type JSONValue = boolean | string | number | null | Array<JSONValue> | { [key in string]: JSONValue }
 
 const Spaces = ({ n }: { n: number }) => <span className="text-gray-300">{'  '.repeat(n)}</span>
-export default function ViewJson({ json, indent = 0 }: { json: JSONValue; ident?: number }) {
+export default function ViewJson({ json, indent = 0 }: { json: JSONValue; indent?: number }) {
   if (json === null) return <span className="text-yellow-600">null</span>
   if (typeof json === 'boolean') return <span className="text-yellow-600">{json ? 'true' : 'false'}</span>
   if (typeof json === 'string') return <span className="text-green-700">"{json.replaceAll('"', '\\"')}"</span>
