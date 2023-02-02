@@ -2,7 +2,7 @@
 import { defineProps } from 'vue'
 import Spaces from './Spaces.vue'
 
-type JSONValue = boolean | string | number | null | JSONValue[] | Record<string, JSONValue>
+type JSONValue = boolean | string | number | null | JSONValue | Record<string, JSONValue>
 
 withDefaults(defineProps<{ json: JSONValue; indent?: number }>(), { indent: 0 })
 </script>
@@ -14,22 +14,25 @@ withDefaults(defineProps<{ json: JSONValue; indent?: number }>(), { indent: 0 })
   <span v-else-if="typeof json === 'string'" class="text-green-700">"{{ json.replaceAll('"', '\\"') }}"</span>
 
   <template v-else-if="Array.isArray(json)">
-    {{ '[\n'
-    }}<template v-for="(value, index) in json">
+    <span>{{ '[\n' }}</span>
+    <template v-for="(value, index) in json">
       <Spaces :n="indent + 1" />
       <ViewJson :json="value" :indent="indent + 1" />
       <template v-if="index !== json.length - 1">{{ ',\n' }}</template>
     </template>
-    {{ '\n' }}<Spaces :n="indent" />{{ ']' }}
+    <span>{{ '\n' }}</span>
+    <Spaces :n="indent" />
+    <span>{{ ']' }}</span>
   </template>
 
   <template v-else>
-    {{ '{\n'
-    }}<template v-for="(value, key, index) in json">
+    <span>{{ '{\n' }}</span>
+    <template v-for="(value, key, index) in json">
       <Spaces :n="indent + 1" />
       <span class="text-red-500">"{{ key }}"</span>: <ViewJson :json="value" :indent="indent + 1" />
       <template v-if="index !== Object.keys(json).length - 1">{{ ',\n' }}</template>
     </template>
-    {{ '\n' }}<Spaces :n="indent" />{{ '}' }}
+    <span>{{ '\n' }}</span>
+    <Spaces :n="indent" />{{ '}' }}
   </template>
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import ViewJson from "./components/ViewJson.vue";
-
+import ViewJson from './components/ViewJson.vue'
+import HighlightAsJson from './components/HighlightAsJson.vue'
 
 const state = reactive({ text: '', isLoading: false, error: null })
 const json = computed(() => (state.text ? JSON.parse(state.text) : null))
@@ -14,10 +14,10 @@ loadData()
 
 <template>
   <div class="max-w-[960px] min-h-screen m-auto p-2">
-    <h1 class="text-4xl font-bold leading-relaxed text-center">React JSON highlight 🍭</h1>
+    <h1 class="text-4xl font-bold leading-relaxed text-center">Vue JSON highlight 🍭</h1>
     <div class="flex gap-2 flex-col">
       <div id="json-text-placeholder" class="text-xs whitespace-pre-wrap bg-gray-100 p-4 rounded-md">
-        HighlightAsJson
+        <HighlightAsJson :text="state.text" />
       </div>
       <div id="json-placeholder" class="text-xs whitespace-pre-wrap bg-gray-100 p-4 rounded-md">
         <ViewJson :json="json" />
