@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { defineProps } from 'vue'
 
-type Value = null | string | { type: string; value: any } | Value[]
+type NodeType = 'string' | 'number' | 'null' | 'boolean' | 'key'
+
+type Value = null | string | { type: NodeType; value: string } | Value[]
 
 defineProps<{ values: Value[] }>()
 </script>

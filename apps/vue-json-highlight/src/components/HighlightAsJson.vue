@@ -19,7 +19,7 @@ const value = recursiveParser(() => choice([jsonString, jsonNumber, jonsNull, jo
 
 const jsonString = parseJsonString.map((value) => ({ type: 'string', value }))
 const jsonNumber = parseJsonNumber.map((value) => ({ type: 'number', value }))
-const jonsNull = parseJsonNull.map(() => ({ type: 'null', value: "null" }))
+const jonsNull = parseJsonNull.map(() => ({ type: 'null', value: 'null' }))
 const jonsBoolean = parseJonsBoolean.map((value) => ({ type: 'boolean', value }))
 
 const jsonArray: Parser<string> = betweenSquareBrackets(commaSeparated(value))
@@ -30,14 +30,12 @@ const jsonObject: Parser<string> = betweenCurlyBrackets(commaSeparated(keyValueP
 
 const json = sequenceOf([startOfInput, optionalWhitespace, value, optionalWhitespace, endOfInput])
 
-const ast = computed(() => {
-  return json.run(props.text)
-})
+const ast = computed(() => json.run(props.text))
 </script>
 
 <template>
   <span v-if="ast.isError" class="text-red-600">{{ ast.error }}</span>
   <template v-else>
-    <RenderAst :values="ast.result.flat(Infinity)" />
+    <RenderAst :values="ast.result" />
   </template>
 </template>
