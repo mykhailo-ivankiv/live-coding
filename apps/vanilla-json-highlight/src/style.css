@@ -3,6 +3,6 @@
 @tailwind utilities;
 
 @font-face {
-    font-family: 'iAWriterQuattroV';
-    src: url('/iAWriterQuattroV.ttf');
+  font-family: 'iAWriterQuattroV';
+  src: url('/iAWriterQuattroV.ttf');
 }

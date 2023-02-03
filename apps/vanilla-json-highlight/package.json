@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@live/parser-utils": "workspace:*",
+    "@live/tailwind-config": "workspace:^1.0.0",
     "arcsecond": "^5.0.0"
   }
 }
