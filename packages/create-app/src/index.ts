@@ -1,53 +1,31 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import spawn from 'cross-spawn'
 import minimist from 'minimist'
 import prompts from 'prompts'
-import { blue, cyan, green, red, reset, yellow } from 'kolorist'
+import { cyan, green, red, reset, yellow } from 'kolorist'
 
 // Avoids autoconversion to number of the project name by defining that the args
 // non associated with an option ( _ ) needs to be parsed as a string. See #4606
 const argv = minimist<{ t?: string; template?: string }>(process.argv.slice(2), { string: ['_'] })
 const cwd = process.cwd()
 
-console.log(cwd);
-
 type ColorFunc = (str: string | number) => string
-type Framework = { name: string; display: string; color: ColorFunc; variants: FrameworkVariant[] }
-type FrameworkVariant = { name: string; display: string; color: ColorFunc; customCommand?: string }
+type Framework = { name: string; display: string; color: ColorFunc }
 
 const FRAMEWORKS: Framework[] = [
-  {
-    name: 'vanilla',
-    display: 'Vanilla',
-    color: yellow,
-    variants: [{ name: 'vanilla-ts', display: 'TypeScript', color: blue }],
-  },
-  {
-    name: 'vue',
-    display: 'Vue',
-    color: green,
-    variants: [{ name: 'vue-ts', display: 'TypeScript', color: blue }],
-  },
-  {
-    name: 'react',
-    display: 'React',
-    color: cyan,
-    variants: [{ name: 'react-ts', display: 'TypeScript', color: blue }],
-  },
+  { name: 'vanilla-ts', display: 'Vanilla TS', color: yellow },
+  { name: 'vue-ts', display: 'Vue TS', color: green },
+  { name: 'react-ts', display: 'React TS', color: cyan },
 ]
 
-const TEMPLATES = FRAMEWORKS.map(({ variants, name }) => variants?.map((v) => v.name) || [name]).reduce(
-  (a, b) => a.concat(b),
-  [],
-)
+const TEMPLATES = FRAMEWORKS.map(({ name }) => name)
 
 const renameFiles: Record<string, string | undefined> = {
   _gitignore: '.gitignore',
 }
 
-const defaultTargetDir = 'live-project'
+const defaultTargetDir = 'live-app'
 
 async function init() {
   const argTargetDir = formatTargetDir(argv._[0])
@@ -56,7 +34,7 @@ async function init() {
   let targetDir = argTargetDir || defaultTargetDir
   const getProjectName = () => (targetDir === '.' ? path.basename(path.resolve()) : targetDir)
 
-  let result: prompts.Answers<'projectName' | 'overwrite' | 'packageName' | 'framework' | 'variant'>
+  let result: prompts.Answers<'projectName' | 'overwrite' | 'packageName' | 'framework'>
 
   try {
     result = await prompts(
@@ -79,9 +57,8 @@ async function init() {
         },
         {
           type: (_, { overwrite }: { overwrite?: boolean }) => {
-            if (overwrite === false) {
-              throw new Error(red('✖') + ' Operation cancelled')
-            }
+            if (overwrite === false) throw new Error(red('✖') + ' Operation cancelled')
+
             return null
           },
           name: 'overwriteChecker',
@@ -109,19 +86,6 @@ async function init() {
             }
           }),
         },
-        {
-          type: (framework: Framework) => (framework && framework.variants ? 'select' : null),
-          name: 'variant',
-          message: reset('Select a variant:'),
-          choices: (framework: Framework) =>
-            framework.variants.map((variant) => {
-              const variantColor = variant.color
-              return {
-                title: variantColor(variant.display || variant.name),
-                value: variant.name,
-              }
-            }),
-        },
       ],
       {
         onCancel: () => {
@@ -135,54 +99,15 @@ async function init() {
   }
 
   // user choice associated with prompts
-  const { framework, overwrite, packageName, variant } = result
+  const { framework, overwrite, packageName } = result
 
   const root = path.join(cwd, targetDir)
 
-  if (overwrite) {
-    emptyDir(root)
-  } else if (!fs.existsSync(root)) {
-    fs.mkdirSync(root, { recursive: true })
-  }
+  if (overwrite) emptyDir(root)
+  else if (!fs.existsSync(root)) fs.mkdirSync(root, { recursive: true })
 
   // determine template
-  let template: string = variant || framework?.name || argTemplate
-  let isReactSwc = false
-  if (template.includes('-swc')) {
-    isReactSwc = true
-    template = template.replace('-swc', '')
-  }
-
-  const pkgInfo = pkgFromUserAgent(process.env.npm_config_user_agent)
-  const pkgManager = pkgInfo ? pkgInfo.name : 'npm'
-  const isYarn1 = pkgManager === 'yarn' && pkgInfo?.version.startsWith('1.')
-
-  const { customCommand } = FRAMEWORKS.flatMap((f) => f.variants).find((v) => v.name === template) ?? {}
-
-  if (customCommand) {
-    const fullCustomCommand = customCommand
-      .replace(/^npm create/, `${pkgManager} create`)
-      // Only Yarn 1.x doesn't support `@version` in the `create` command
-      .replace('@latest', () => (isYarn1 ? '' : '@latest'))
-      .replace(/^npm exec/, () => {
-        // Prefer `pnpm dlx` or `yarn dlx`
-        if (pkgManager === 'pnpm') {
-          return 'pnpm dlx'
-        }
-        if (pkgManager === 'yarn' && !isYarn1) {
-          return 'yarn dlx'
-        }
-        // Use `npm exec` in all other cases,
-        // including Yarn 1.x and other custom npm clients.
-        return 'npm exec'
-      })
-
-    const [command, ...args] = fullCustomCommand.split(' ')
-    // we replace TARGET_DIR here because targetDir may include a space
-    const replacedArgs = args.map((arg) => arg.replace('TARGET_DIR', targetDir))
-    const { status } = spawn.sync(command, replacedArgs, { stdio: 'inherit' })
-    process.exit(status ?? 0)
-  }
+  let template: string = framework?.name || argTemplate
 
   console.log(`\nScaffolding project in ${root}...`)
 
@@ -190,11 +115,8 @@ async function init() {
 
   const write = (file: string, content?: string) => {
     const targetPath = path.join(root, renameFiles[file] ?? file)
-    if (content) {
-      fs.writeFileSync(targetPath, content)
-    } else {
-      copy(path.join(templateDir, file), targetPath)
-    }
+    if (content) fs.writeFileSync(targetPath, content)
+    else copy(path.join(templateDir, file), targetPath)
   }
 
   const files = fs.readdirSync(templateDir)
@@ -208,25 +130,14 @@ async function init() {
 
   write('package.json', JSON.stringify(pkg, null, 2))
 
-  if (isReactSwc) {
-    setupReactSwc(root, template.endsWith('-ts'))
-  }
-
   const cdProjectName = path.relative(cwd, root)
   console.log(`\nDone. Now run:\n`)
   if (root !== cwd) {
     console.log(`  cd ${cdProjectName.includes(' ') ? `"${cdProjectName}"` : cdProjectName}`)
   }
-  switch (pkgManager) {
-    case 'yarn':
-      console.log('  yarn')
-      console.log('  yarn dev')
-      break
-    default:
-      console.log(`  ${pkgManager} install`)
-      console.log(`  ${pkgManager} run dev`)
-      break
-  }
+
+  console.log(`  pnpm install`)
+  console.log(`  pnpm run dev`)
   console.log()
 }
 
@@ -235,12 +146,8 @@ function formatTargetDir(targetDir: string | undefined) {
 }
 
 function copy(src: string, dest: string) {
-  const stat = fs.statSync(src)
-  if (stat.isDirectory()) {
-    copyDir(src, dest)
-  } else {
-    fs.copyFileSync(src, dest)
-  }
+  if (fs.statSync(src).isDirectory()) copyDir(src, dest)
+  else fs.copyFileSync(src, dest)
 }
 
 function isValidPackageName(projectName: string) {
@@ -271,39 +178,13 @@ function isEmpty(path: string) {
 }
 
 function emptyDir(dir: string) {
-  if (!fs.existsSync(dir)) {
-    return
-  }
+  if (!fs.existsSync(dir)) return
+
   for (const file of fs.readdirSync(dir)) {
-    if (file === '.git') {
-      continue
-    }
+    if (file === '.git') continue
+
     fs.rmSync(path.resolve(dir, file), { recursive: true, force: true })
   }
-}
-
-function pkgFromUserAgent(userAgent: string | undefined) {
-  if (!userAgent) return undefined
-  const pkgSpec = userAgent.split(' ')[0]
-  const pkgSpecArr = pkgSpec.split('/')
-  return {
-    name: pkgSpecArr[0],
-    version: pkgSpecArr[1],
-  }
-}
-
-function setupReactSwc(root: string, isTs: boolean) {
-  editFile(path.resolve(root, 'package.json'), (content) => {
-    return content.replace(/"@vitejs\/plugin-react": ".+?"/, `"@vitejs/plugin-react-swc": "^3.0.0"`)
-  })
-  editFile(path.resolve(root, `vite.config.${isTs ? 'ts' : 'js'}`), (content) => {
-    return content.replace('@vitejs/plugin-react', '@vitejs/plugin-react-swc')
-  })
-}
-
-function editFile(file: string, callback: (content: string) => string) {
-  const content = fs.readFileSync(file, 'utf-8')
-  fs.writeFileSync(file, callback(content), 'utf-8')
 }
 
 init().catch((e) => {

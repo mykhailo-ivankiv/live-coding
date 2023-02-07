@@ -9,7 +9,7 @@
   "devDependencies": {
     "typescript": "5.0.0-beta"
   },
-  "peerDependencies": {
+  "dependencies": {
     "arcsecond": "^5.0.0"
   }
 }

@@ -116,9 +116,15 @@ importers:
 
   packages/parser-utils:
     specifiers:
+      arcsecond: ^5.0.0
       typescript: 5.0.0-beta
+    dependencies:
+      arcsecond: 5.0.0
     devDependencies:
       typescript: 5.0.0-beta
+
+  packages/tailwind-config:
+    specifiers: {}
 
 packages:
 

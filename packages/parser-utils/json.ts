@@ -3,8 +3,6 @@ import { char, choice, digits, sequenceOf, str, many, possibly, anyCharExcept, o
 
 const join = (arr: any[], separator = '') => arr.join(separator)
 
-const numberDecimalPart = sequenceOf([char('.'), digits]).map(join)
-
 const notZeroDigit = choice([
   char('1'),
   char('2'),
@@ -17,9 +15,15 @@ const notZeroDigit = choice([
   char('9'),
 ])
 
+const numberDecimalPart = sequenceOf([char('.'), digits]).map(join)
+const numberFullPart = choice([
+  char('0'),
+  sequenceOf([notZeroDigit, possibly(digits)]).map(join), //
+])
+
 export const parseJsonNumber = sequenceOf([
   possibly(char('-')),
-  notZeroDigit,
+  numberFullPart,
   possibly(digits),
   possibly(numberDecimalPart),
 ]).map(join)
@@ -37,7 +41,7 @@ export const parseJsonString = sequenceOf([
   char('"'),
 ]).map(join)
 
-const betweenEager = (openParser: Parser<string>, closeParser: Parser<string>) => (content: Parser) =>
+const betweenEager = (openParser: Parser<string>, closeParser: Parser<string>) => (content: Parser<any>) =>
   sequenceOf([
     sequenceOf([openParser, optionalWhitespace]).map(join),
     content,
