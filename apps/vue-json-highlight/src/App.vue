@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive } from 'vue'
 import ViewJson from './components/ViewJson.vue'
 import HighlightAsJson from './components/HighlightAsJson.vue'
 
