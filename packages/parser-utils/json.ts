@@ -29,7 +29,7 @@ export const parseJsonNumber = sequenceOf([
 export const parseJsonNull = str('null')
 export const parseJonsBoolean = choice([str('false'), str('true')])
 
-const sepByEager = (separator: Parser<any>) => (parser: Parser<any>) =>
+export const sepByEager = (separator: Parser<any>) => (parser: Parser<any>) =>
   sequenceOf([parser, many(sequenceOf([separator, parser]))]).map(([first, rest]) => [first, ...rest.flat(1)])
 
 export const commaSeparated = sepByEager(sequenceOf([optionalWhitespace, char(','), optionalWhitespace]).map(join))

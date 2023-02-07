@@ -10,15 +10,19 @@ importers:
       '@live/create-app': link:packages/create-app
       '@nrwl/nx-cloud': 15.0.3
 
-  apps/live-app:
+  apps/calculator:
     specifiers:
+      '@live/parser-utils': workspace:^0.0.0
       '@live/tailwind-config': workspace:^1.0.0
       '@vitejs/plugin-vue': ^4.0.0
+      arcsecond: ^5.0.0
       typescript: 5.0.0-beta
       vite: ^4.1.0
       vue: ^3.2.45
       vue-tsc: ^1.0.24
     dependencies:
+      '@live/parser-utils': link:../../packages/parser-utils
+      arcsecond: 5.0.0
       vue: 3.2.47
     devDependencies:
       '@live/tailwind-config': link:../../packages/tailwind-config
