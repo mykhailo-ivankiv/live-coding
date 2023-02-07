@@ -2,7 +2,6 @@ import type { Parser } from 'arcsecond'
 import { char, choice, digits, sequenceOf, str, many, possibly, anyCharExcept, optionalWhitespace } from 'arcsecond'
 
 const join = (arr: any[], separator = '') => arr.join(separator)
-
 const notZeroDigit = choice([
   char('1'),
   char('2'),

@@ -4,10 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build": "tsup main.ts"
+    "build": "tsup main.ts",
+    "test": "vitest run --coverage"
   },
   "devDependencies": {
-    "typescript": "5.0.0-beta"
+    "@vitest/coverage-c8": "^0.28.4",
+    "typescript": "5.0.0-beta",
+    "vitest": "^0.28.4"
   },
   "dependencies": {
     "arcsecond": "^5.0.0"
