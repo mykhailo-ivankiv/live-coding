@@ -1,10 +1,20 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { anyCharExcept, between, char, choice, many, possibly, recursiveParser, sepBy, sequenceOf } from 'arcsecond'
+import {
+  anyCharExcept,
+  between,
+  char,
+  choice,
+  many,
+  Parser,
+  possibly,
+  recursiveParser,
+  sepBy,
+  sequenceOf,
+} from 'arcsecond'
 import { parseJsonNumber, sepByEager } from '@live/parser-utils/json.ts'
 
-const text = ref(`1 - 2 * 3
-3 * 2 + 1`)
+const text = ref(`(10 - 2 * 3) * 10 + 2`)
 
 const optionalWhitespace = many(char(' '))
 
@@ -16,9 +26,8 @@ const divide = sequenceOf([optionalWhitespace, char('/'), optionalWhitespace]).m
 const openBracket = sequenceOf([optionalWhitespace, char('('), optionalWhitespace]).map(() => '(')
 const closeBracket = sequenceOf([optionalWhitespace, char(')'), optionalWhitespace]).map(() => ')')
 
-const anyString = many(anyCharExcept(char('\n'))).map((r) => r.join(''))
-
-const expressionInBrackets = recursiveParser(() => between(openBracket)(closeBracket)(sumExpression))
+const anyString = many(anyCharExcept(char('\n')))
+const expressionInBrackets = recursiveParser(() => between(openBracket)(closeBracket)(expression)) as Parser<number>
 
 const multiplicationTerm = sepByEager(choice([multiply, divide]))(choice([expressionInBrackets, number])).map(
   (res: (number | string)[]) => {
@@ -35,7 +44,7 @@ const multiplicationTerm = sepByEager(choice([multiply, divide]))(choice([expres
     return result
   },
 )
-const sumExpression = sepByEager(choice([plus, minus]))(choice([multiplicationTerm, expressionInBrackets, number])).map(
+const expression = sepByEager(choice([plus, minus]))(choice([multiplicationTerm, expressionInBrackets, number])).map(
   (res: (number | string)[]) => {
     let result: number = Number(res[0])
 
@@ -51,9 +60,7 @@ const sumExpression = sepByEager(choice([plus, minus]))(choice([multiplicationTe
   },
 )
 
-const expressionString = sequenceOf([optionalWhitespace, possibly(sumExpression), anyString]).map(
-  ([_, res]) => res || ' ',
-)
+const expressionString = sequenceOf([optionalWhitespace, possibly(expression), anyString]).map(([_, res]) => res || ' ')
 const expressions = sepBy(char('\n'))(expressionString)
 
 const values = computed(() => expressions.run(text.value).result)
