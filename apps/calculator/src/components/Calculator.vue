@@ -14,8 +14,6 @@ import {
 } from 'arcsecond'
 import { parseJsonNumber, sepByEager } from '@live/parser-utils/json.ts'
 
-const text = ref(`(10 - 2 * 3) * 10 + 2`)
-
 const optionalWhitespace = many(char(' '))
 
 const number = parseJsonNumber.map((n) => Number(n))
@@ -63,14 +61,22 @@ const expression = sepByEager(choice([plus, minus]))(choice([multiplicationTerm,
 const expressionString = sequenceOf([optionalWhitespace, possibly(expression), anyString]).map(([_, res]) => res || ' ')
 const expressions = sepBy(char('\n'))(expressionString)
 
+const el = ref<HTMLDivElement | null>(null)
+const text = ref(`(10 - 2 * 3) * 10 + 2
+
+12`)
 const values = computed(() => expressions.run(text.value).result)
+const lines = computed(() => text.value.split('\n'))
 </script>
 
 <template>
-  <div class="flex ring-2 ring-gray-300 focus-within:ring-blue-500">
-    <textarea v-model="text" class="resize-none border-none w-full p-2 focus:outline-none" />
-    <div class="p-2 border-l w-32 text-red-800">
-      <div class="whitespace-pre" v-for="value in values">{{ value }}</div>
+  <div class="ring-2 ring-gray-300 focus-within:ring-blue-500">
+    <div class="relative p-2 w-3/4 ">
+      <div class="whitespace-pre-wrap break-words relative text-transparent" v-for="(line, index) in lines">
+        {{line || " "}}
+        <div class="absolute z-20 left-full border-l min-h-full ml-2 p-2 -top-2  text-red-800">{{values[index]}}</div>
+      </div>
+      <textarea ref="el" v-model="text" class="absolute break-words z-10 inset-0 h-full w-full resize-none border-none p-2 focus:outline-none" />
     </div>
   </div>
 </template>
