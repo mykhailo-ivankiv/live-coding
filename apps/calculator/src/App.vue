@@ -4,10 +4,10 @@ import Calculator from './components/Calculator.vue'
 
 <template>
   <main class="w-[60ch] p-4 m-auto">
-    <h1 class="text-4xl font-bold my-4">Vue TS + tailwind Template</h1>
+    <h1 class="text-4xl font-bold my-4">Calculator for nerds 🤓</h1>
     <p class="my-4">
-      This is a template for creating a Vue 3 app with TypeScript and Tailwind CSS. To get started, edit
-      <code class="font-mono text-blue-600">App.vue</code> and save to reload.
+      This is simple calculator for nerds. It supports variables, expressions, and assignments. You can use it to calculate
+      your taxes, or to calculate the price of your new <span class="line-through">car</span> or bicycle .
     </p>
     <Calculator />
   </main>
