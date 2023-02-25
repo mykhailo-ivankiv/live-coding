@@ -56,7 +56,6 @@ export const getAllDaysInMonth = curry((date: Date, clamp: boolean, weekStart: 0
 
 export const getMonths = (date: Date): Date[] => {
   const year = getYear(date)
-  const month = getMonth(date)
 
-  return range(0, 12).map((n) => new Date(year, month + n))
+  return range(0, 12).map((n) => new Date(year, n))
 }
