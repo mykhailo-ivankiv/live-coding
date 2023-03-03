@@ -1,0 +1,21 @@
+{
+  "name": "@live/components-vue",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@live/date-utils": "workspace:^1.0.0",
+    "date-fns": "^2.29.3",
+    "ramda": "^0.28.0",
+    "vue": "^3.2.47"
+  },
+  "devDependencies": {
+    "@types/ramda": "^0.28.23"
+  }
+}
