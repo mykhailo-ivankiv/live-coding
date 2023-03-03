@@ -11,6 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "@live/date-utils": "workspace:^1.0.0",
+    "@live/parser-utils": "workspace:^0.0.0",
+    "arcsecond": "^5.0.0",
     "date-fns": "^2.29.3",
     "ramda": "^0.28.0",
     "vue": "^3.2.47"

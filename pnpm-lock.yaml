@@ -138,12 +138,16 @@ importers:
   packages/components-vue:
     specifiers:
       '@live/date-utils': workspace:^1.0.0
+      '@live/parser-utils': workspace:^0.0.0
       '@types/ramda': ^0.28.23
+      arcsecond: ^5.0.0
       date-fns: ^2.29.3
       ramda: ^0.28.0
       vue: ^3.2.47
     dependencies:
       '@live/date-utils': link:../date-utils
+      '@live/parser-utils': link:../parser-utils
+      arcsecond: 5.0.0
       date-fns: 2.29.3
       ramda: 0.28.0
       vue: 3.2.47

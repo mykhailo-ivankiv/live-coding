@@ -15,7 +15,7 @@ const months = getMonths(targetDate.value)
 
 <template>
   <select class="py-1 px-2" type="number" v-model="targetDate">
-    <option v-for="month in months" :value="month">
+    <option v-for="month in months" :value="month" :selected="isSameMonth(targetDate, month) ? true : false">
       {{ format(month, 'MMMM') }}
     </option>
   </select>
