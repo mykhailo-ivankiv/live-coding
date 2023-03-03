@@ -17,7 +17,7 @@ withDefaults(defineProps<{ json: JSONValue; indent?: number }>(), { indent: 0 })
     <span>{{ '[\n' }}</span>
     <template v-for="(value, index) in json">
       <Spaces :n="indent + 1" />
-      <ViewJson :json="value" :indent="indent + 1" />
+      <JsonView :json="value" :indent="indent + 1" />
       <template v-if="index !== json.length - 1">{{ ',\n' }}</template>
     </template>
     <span>{{ '\n' }}</span>
@@ -29,7 +29,7 @@ withDefaults(defineProps<{ json: JSONValue; indent?: number }>(), { indent: 0 })
     <span>{{ '{\n' }}</span>
     <template v-for="(value, key, index) in json">
       <Spaces :n="indent + 1" />
-      <span class="text-red-500">"{{ key }}"</span>: <ViewJson :json="value" :indent="indent + 1" />
+      <span class="text-red-500">"{{ key }}"</span>: <JsonView :json="value" :indent="indent + 1" />
       <template v-if="index !== Object.keys(json).length - 1">{{ ',\n' }}</template>
     </template>
     <span>{{ '\n' }}</span>
