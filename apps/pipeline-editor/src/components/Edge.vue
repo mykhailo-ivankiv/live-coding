@@ -13,9 +13,9 @@ const tail = 30
         to.x - from.x >= tail * 2
           ? `
             M${from.x},${from.y}
-            h${tail + (to.x - from.x - tail *2)/2}
-            v${(to.y - from.y)}
-            h${tail + (to.x - from.x - tail *2)/2}
+            h${tail + (to.x - from.x - tail * 2) / 2}
+            v${to.y - from.y}
+            h${tail + (to.x - from.x - tail * 2) / 2}
           `
           : `
             M${from.x},${from.y}
