@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { Codemirror } from 'vue-codemirror'
-import { oneDark } from '@codemirror/theme-one-dark'
 import { json } from '@codemirror/lang-json'
 import { ref, shallowRef } from 'vue'
 
 const code = ref('1')
-const extensions = [json(), oneDark]
+const extensions = [json()]
 // Codemirror EditorView instance ref
 const view = shallowRef()
 const handleReady = (payload) => {
