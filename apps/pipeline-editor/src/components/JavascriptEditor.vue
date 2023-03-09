@@ -31,7 +31,7 @@ const log = console.log
     v-model="code"
     placeholder="Code goes here..."
     :style="{ height: '100%', width: '100%' }"
-    :autofocus="true"
+    :autofocus="false"
     :indent-with-tab="true"
     :tab-size="2"
     :extensions="extensions"
@@ -41,3 +41,9 @@ const log = console.log
     @blur="log('blur', $event)"
   />
 </template>
+
+<style>
+.cm-gutters {
+  display: none !important;
+}
+</style>

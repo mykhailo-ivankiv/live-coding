@@ -1,15 +1,15 @@
 <script setup lang="ts">
 // import JsonEditor from './JsonEditor.vue'
 // import JavascriptEditor from './JavascriptEditor.vue'
-import { translate, toCSS, compose, scale, applyToPoint } from 'transformation-matrix'
+import { translate, toCSS, compose, scale, applyToPoint, inverse } from 'transformation-matrix'
 import { computed, ref } from 'vue'
 import Egde from './Edge.vue'
 
 const canvas = ref(null)
 const root = ref(null)
-const matrix = ref(translate(0, 0))
+const matrix = ref(compose(translate(0, 0), scale(0.9, 0.9)))
 
-const dag = computed(() => [
+const dag = ref([
   { id: '0', type: 'data', data: 1, position: { x: 40, y: 200 }, width: 380, height: 124 },
   { id: '1', type: 'function', data: 1, position: { x: 260, y: 450 }, width: 380, height: 124 },
   { id: 'e0-1', source: '0', target: '1' },
@@ -44,10 +44,12 @@ const canvasZoomHandler = ({ event, delta }) => {
   matrix.value = compose(scale(zoom, zoom, event.x - width / 2, event.y - height / 2), matrix.value)
 }
 
-const nodeDragHandler = () => {
-  console.log('nodeDragHandler')
-  // Do something with dragState
-}
+const nodeDragHandler =
+  (node) =>
+  ({ delta }) => {
+    node.position.x += (delta[0] * 1) / matrix.value.a
+    node.position.y += (delta[1] * 1) / matrix.value.a
+  }
 </script>
 
 <template>
@@ -61,21 +63,23 @@ const nodeDragHandler = () => {
     <div ref="canvas" :style="`transform: ${toCSS(matrix)}`" class="h-full">
       <!-- Nodes -->
       <div
-        v-drag="nodeDragHandler"
-        v-for="node in nodes"
-        class="absolute h-32 w-96 flex box-border rounded-md overflow-hidden border-2 border-blue-700 shadow shadow-blue-300"
+        v-for="{ position, width, height, id, type } in nodes"
+        v-drag="nodeDragHandler(nodes[id])"
+        class="absolute h-32 w-96 box-border rounded-md overflow-hidden border-2 border-blue-700 shadow shadow-blue-300"
+        :key="id"
         :style="`
-          left: ${node.position.x}px;
-          top: ${node.position.y}px;
-          width: ${node.width}px;
-          height: ${node.height}px;
+          left: ${position.x}px;
+          top: ${position.y}px;
+          width: ${width}px;
+          height: ${height}px;
         `"
       >
+        <div class="py-1 px-2 pl-4 border-b-2">title</div>
         <!--
           Using css transform results in incorrect tooltip positioning
           https://github.com/codemirror/dev/issues/324
         -->
-        <iframe v-if="node?.type === 'data'" class="h-full w-full" src="/codemirror/json" />
+        <iframe v-if="type === 'data'" class="h-full w-full" src="/codemirror/json" />
         <iframe v-else class="h-full w-full" src="/codemirror/javascript" />
 
         <!--        <JsonEditor v-if="node?.type === 'data'" />-->
@@ -83,7 +87,7 @@ const nodeDragHandler = () => {
       </div>
 
       <!-- Edges -->
-      <svg class="absolute overflow-visible">
+      <svg class="absolute overflow-visible w-0 h-0">
         <Egde
           v-for="{ source, target } in edges"
           :from="{
