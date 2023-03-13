@@ -1,1 +1,1 @@
-export default b => b * 3;
+export default b => b * 8;

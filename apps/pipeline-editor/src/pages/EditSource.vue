@@ -1,10 +1,18 @@
 <script setup lang="ts">
+import { useRoute } from 'vue-router'
 import { Codemirror } from 'vue-codemirror'
+import { json } from '@codemirror/lang-json'
 import { javascript } from '@codemirror/lang-javascript'
-import { ref, shallowRef } from 'vue'
+import {ref, shallowRef} from 'vue'
 
-const code = ref(`export default (a) => a * a`)
-const extensions = [javascript()]
+const sourceId = useRoute().params.sourceId
+const extension = sourceId.match(/\..+$/)[0]
+
+const lang = extension === '.js' ? javascript : json
+
+const code = ref(await (await fetch(`http://localhost:3000/sources/${sourceId}`)).text())
+
+const extensions = [lang()]
 // Codemirror EditorView instance ref
 const view = shallowRef()
 const handleReady = (payload) => {
@@ -24,6 +32,16 @@ const getCodemirrorStates = () => {
 }
 
 const log = console.log
+
+document.addEventListener('keydown', async (e) => {
+  if (e.key === 's' && (navigator.platform.match('Mac') ? e.metaKey : e.ctrlKey)) {
+    e.preventDefault()
+    await fetch(`http://localhost:3000/sources/${sourceId}`, {
+      method: 'PUT',
+      body: code.value,
+    })
+  }
+})
 </script>
 
 <template>

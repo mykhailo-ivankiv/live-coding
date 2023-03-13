@@ -129,10 +129,10 @@ const addDataNode = (node) => {
           https://github.com/codemirror/dev/issues/324
         -->
           <iframe v-if="node.type === 'data'" class="h-full w-full" :src="`/edit/${node.source}`" />
+          <iframe v-else-if="node.type === 'cache'" class="h-full w-full" :src="`/view/${node.source}`" />
           <iframe v-else class="h-full w-full" :src="`/edit/${node.source}`" />
-
-          <!--        <JsonEditor v-if="node?.type === 'data'" />-->
-          <!--        <JavascriptEditor v-else-if="node?.type === 'function'" />-->
+          <!-- <JsonEditor v-if="node?.type === 'data'" />-->
+          <!-- <JavascriptEditor v-else-if="node?.type === 'function'" />-->
         </div>
       </div>
     </div>

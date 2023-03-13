@@ -5,7 +5,8 @@ const router = createRouter({
   routes: [
     { path: '/', name: 'Home', component: () => import('../pages/PipelinePage.vue') },
     // { path: '/edit/:source', component: JavascriptEditor },
-    { path: '/edit/:sourceId', component: () => import('../pages/CodeMirror.vue') },
+    { path: '/edit/:sourceId', component: () => import('../pages/EditSource.vue') },
+    { path: '/view/:sourceId', component: () => import('../pages/VueSource.vue') },
     { path: '/:any(.*)*', component: () => import('../pages/404.vue') },
   ],
 })
