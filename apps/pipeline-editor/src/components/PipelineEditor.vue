@@ -1,35 +1,25 @@
 <script setup lang="ts">
 // import JsonEditor from './JsonEditor.vue'
 // import JavascriptEditor from './JavascriptEditor.vue'
-import { translate, toCSS, compose, scale, applyToPoint, inverse } from 'transformation-matrix'
-import { computed, ref } from 'vue'
-import Egde from './Edge.vue'
-
-type Rect = { x: number; y: number; width: number; height: number }
+import { translate, toCSS, compose, scale } from 'transformation-matrix'
+import { ref } from 'vue'
+import Edge from './Edge.vue'
+import { findYPosition } from '../utils/geomenty'
 
 const canvas = ref(null)
 const root = ref(null)
 const matrix = ref(translate(0, 0))
 
-const dag = ref([
-  { id: 'node-0', type: 'data', position: { x: 40, y: 200, width: 380, height: 124 } },
-  { id: 'node-1', type: 'function', position: { x: 480, y: 200, width: 380, height: 124 } },
-  { id: 'node-2', type: 'data', position: { x: 920, y: 200, width: 380, height: 124 } },
-  { id: 'node-3', type: 'function', position: { x: 480, y: 350, width: 380, height: 124 } },
-  { id: 'edge-0', source: 'node-0', target: 'node-1' },
-  { id: 'edge-1', source: 'node-0', target: 'node-3' },
-  { id: 'edge-2', source: 'node-1', target: 'node-2' },
-])
+const pipeline = await (await fetch('http://localhost:3000/pipelines/1')).json()
 
-const nodes = computed(() =>
-  dag.value
-    .filter((nodeOrEdge) => nodeOrEdge.type === 'data' || nodeOrEdge.type === 'function')
-    .reduce((acc, node) => {
-      acc[node.id] = node
-      return acc
-    }, {}),
+const nodes = ref(
+  pipeline.nodes.reduce((acc, node) => {
+    acc[node.id] = node
+    return acc
+  }, {}),
 )
-const edges = computed(() => dag.value.filter((nodeOrEdge) => nodeOrEdge.type === undefined))
+
+const edges = ref(pipeline.edges)
 
 const canvasDragHandler = ({ delta: [x, y], event }) => {
   if (event.target !== canvas.value && event.target !== root.value) return
@@ -57,46 +47,6 @@ const nodeDragHandler =
     node.position.y += (delta[1] * 1) / matrix.value.a
   }
 
-type Range = { start: number; end: number }
-const isRangesIntersect = (a: Range, b: Range): boolean => a.start < b.end && b.start < a.end
-const findYPosition = (x: number, approximateY: number, width: number, height: number, rects: Rect[]) => {
-  const margin = 20
-  let yRange = { start: approximateY - margin, end: approximateY + height + margin }
-  let xRange = { start: x - margin, end: x + width + margin }
-
-  const rectsInTheSameColumn = rects.filter(({ x, width }) => isRangesIntersect({ start: x, end: x + width }, xRange))
-  const intersectWith = rectsInTheSameColumn.find((rect) =>
-    isRangesIntersect(yRange, { start: rect.y, end: rect.y + rect.height }),
-  )
-
-  if (!intersectWith) return approximateY
-
-  let intersectOnTop: Rect | undefined = intersectWith
-  let freeYPositionOnTop: Range = { ...yRange }
-
-  while (intersectOnTop) {
-    freeYPositionOnTop.start = intersectOnTop.y - height - margin
-    freeYPositionOnTop.end = intersectOnTop.y - margin
-    intersectOnTop = rectsInTheSameColumn.find((rect) =>
-      isRangesIntersect(freeYPositionOnTop, { start: rect.y, end: rect.y + rect.height }),
-    )
-  }
-
-  let intersectOnBottom: Rect | undefined = intersectWith
-  let freeYPositionOnBottom: Range = { ...yRange }
-
-  while (intersectOnBottom) {
-    freeYPositionOnBottom.start = intersectOnBottom.y + intersectOnBottom.height + margin
-    freeYPositionOnBottom.end = intersectOnBottom.y + intersectOnBottom.height + height + margin
-    intersectOnBottom = rectsInTheSameColumn.find((rect) =>
-      isRangesIntersect(freeYPositionOnBottom, { start: rect.y, end: rect.y + rect.height }),
-    )
-  }
-
-  return Math.abs(approximateY - freeYPositionOnTop.start) < Math.abs(approximateY - freeYPositionOnBottom.start)
-    ? freeYPositionOnTop.start
-    : freeYPositionOnBottom.start
-}
 const addDataNode = (node) => {
   const width = 380
   const height = 124
@@ -108,10 +58,8 @@ const addDataNode = (node) => {
 
   const id = 'node-' + reservedPositions.length
 
-  dag.value.push(
-    { id, type: 'function', position: { x, y, width, height } }, // new node
-    { id: 'edge-' + edges.value.length, source: node.id, target: id }, // new edge
-  )
+  nodes.value[id] = { id, type: 'function', position: { x, y, width, height } }
+  edges.value.push({ id: 'edge-' + edges.value.length, source: node.id, target: id })
 }
 </script>
 
@@ -127,7 +75,7 @@ const addDataNode = (node) => {
       <!-- Edges -->
       <!-- left-[2px] is hack you fix border size of node-->
       <svg class="absolute left-[2px] z-10 overflow-visible w-screen h-screen pointer-events-none">
-        <Egde
+        <Edge
           v-for="{ source, target } in edges"
           :from="{
             x: nodes[source].position.x + nodes[source].position.width,
@@ -144,7 +92,7 @@ const addDataNode = (node) => {
       <div
         v-for="node in nodes"
         v-drag="nodeDragHandler(nodes[node.id])"
-        class="absolute"
+        class="absolute z-20"
         :key="node.id"
         :style="`
           left: ${node.position.x}px;
@@ -155,7 +103,7 @@ const addDataNode = (node) => {
       >
         <button
           v-if="node.type === 'data'"
-          class="absolute z-20 top-1/2 -right-7 transform -translate-y-1/2"
+          class="absolute top-1/2 -right-5 transform -translate-y-1/2"
           @click="addDataNode(node)"
         >
           <svg
@@ -173,15 +121,15 @@ const addDataNode = (node) => {
           </svg>
         </button>
         <div
-          class="h-32 w-96 box-border rounded-md overflow-hidden border-2 border-blue-700 shadow shadow-blue-300 bg-white"
+          class="h-32 w-96 box-border rounded-md overflow-hidden border-2 border-blue-700 shadow shadow-blue-300 bg-white flex flex-col"
         >
           <div class="py-1 px-2 pl-4 border-b-2">title</div>
           <!--
           Using css transform results in incorrect tooltip positioning
           https://github.com/codemirror/dev/issues/324
         -->
-          <iframe v-if="node.type === 'data'" class="h-full w-full" src="/codemirror/json" />
-          <iframe v-else class="h-full w-full" src="/codemirror/javascript" />
+          <iframe v-if="node.type === 'data'" class="h-full w-full" :src="`/edit/${node.source}`" />
+          <iframe v-else class="h-full w-full" :src="`/edit/${node.source}`" />
 
           <!--        <JsonEditor v-if="node?.type === 'data'" />-->
           <!--        <JavascriptEditor v-else-if="node?.type === 'function'" />-->
