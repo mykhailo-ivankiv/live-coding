@@ -7,10 +7,9 @@ import WebSocket, { WebSocketServer } from 'ws'
 import path from 'path'
 
 type Rectangle = { x: number; y: number; width: number; height: number }
-type Node = { id: string; source: string; type: 'data' | 'function' | 'cache'; position: Rectangle }
+type Node = { id: string; source: string; type: 'data' | 'function' | 'cache'; position: Rectangle; title: string }
 type Edge = { id: string; source: string; target: string }
-
-type Pipeline = { nodes: Node[]; edges: Edge[] }
+type Pipeline = { id: string; nodes: Node[]; edges: Edge[] }
 
 const app = express()
 const port = 3000
@@ -27,22 +26,7 @@ const broadcastMessage = (message) => {
   })
 }
 
-const pipeline: Pipeline = {
-  nodes: [
-    { id: 'node-0', source: 'data-0.json', type: 'data', position: { x: 40, y: 200, width: 380, height: 124 } },
-    { id: 'node-1', source: 'function-1.js', type: 'function', position: { x: 480, y: 200, width: 380, height: 124 } },
-    { id: 'node-2', source: 'data-2.json', type: 'cache', position: { x: 920, y: 200, width: 380, height: 124 } },
-    { id: 'node-3', source: 'function-3.js', type: 'function', position: { x: 480, y: 350, width: 380, height: 124 } },
-    { id: 'node-4', source: 'data-4.json', type: 'cache', position: { x: 920, y: 350, width: 380, height: 124 } },
-  ],
-  edges: [
-    { id: 'edge-0', source: 'node-0', target: 'node-1' },
-    { id: 'edge-1', source: 'node-0', target: 'node-3' },
-    { id: 'edge-2', source: 'node-1', target: 'node-2' },
-    { id: 'edge-2', source: 'node-3', target: 'node-4' },
-  ],
-}
-
+let pipeline: Pipeline
 //https://github.com/nodejs/modules/issues/307#issuecomment-1382183511
 async function importFresh(modulePath: string) {
   const filepath = path.resolve(modulePath)
@@ -59,7 +43,7 @@ async function importFresh(modulePath: string) {
 }
 
 // this is a very naive implementation, but it works for now
-const runPipeline = async (pipeline) => {
+const runPipeline = async (pipeline: Pipeline) => {
   const sourceNodes = pipeline.nodes
     .filter((node) => node.type === 'data')
     .filter((node) => {
@@ -94,6 +78,10 @@ app.use(cors())
 app.use(bodyParser.text())
 // app.use(bodyParser.json())
 app.get('/pipelines/1', async (req, res) => {
+  if (!pipeline) {
+    pipeline = JSON.parse(await fs.readFile('./sources/pipeline.json', 'utf-8'))
+  }
+
   await runPipeline(pipeline)
 
   return res.json(pipeline)

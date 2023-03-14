@@ -1,6 +1,6 @@
 import { isRangesIntersect, Range } from './range'
 
-type Rect = { x: number; y: number; width: number; height: number }
+export type Rect = { x: number; y: number; width: number; height: number }
 export const findYPosition = (x: number, approximateY: number, width: number, height: number, rects: Rect[]) => {
   const margin = 20
   let yRange = { start: approximateY - margin, end: approximateY + height + margin }
