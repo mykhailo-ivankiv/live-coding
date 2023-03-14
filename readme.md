@@ -1,4 +1,4 @@
-This is a repository what contain code from Context Labs FE weekly live coding sessions.
+This is a repository what contain code from Context Labs FE weekly live coding sessions. https://mykhailo-live-coding.netlify.app/
 
 ## Getting started
 

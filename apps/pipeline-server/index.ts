@@ -43,7 +43,8 @@ const pipeline: Pipeline = {
   ],
 }
 
-async function importFresh(modulePath) {
+//https://github.com/nodejs/modules/issues/307#issuecomment-1382183511
+async function importFresh(modulePath: string) {
   const filepath = path.resolve(modulePath)
   const fileContent = await fs.readFile(filepath, 'utf8')
   const ext = path.extname(filepath)
