@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { translate, toCSS, compose, scale, applyToPoint } from 'transformation-matrix'
-import { ref } from 'vue'
+import { translate, toCSS, compose, scale, inverse, applyToPoint } from 'transformation-matrix'
+import { computed, ref } from 'vue'
 import Edge from './Edge.vue'
-import { findYPosition } from '../utils/geomenty'
+import { findYPosition, isRectsIntersect, Rect } from '../utils/geomenty'
+import { DragState } from '@vueuse/gesture'
 
 const canvas = ref(null)
 const root = ref(null)
 const matrix = ref(translate(0, 0))
+const inverseMatrix = computed(() => inverse(matrix.value))
 
 const pipeline = await (await fetch('http://localhost:3000/pipelines/1')).json()
 
@@ -19,10 +21,51 @@ const nodes = ref(
 
 const edges = ref(pipeline.edges)
 
-const canvasDragHandler = ({ delta: [x, y], event }) => {
-  if (event.target !== canvas.value && event.target !== root.value) return
+const handleCanvasDrag = ({ delta: [x, y] }: DragState) => {
   // Do something with dragState
   matrix.value = compose(translate(x, y), matrix.value)
+}
+
+const selectedNodes = ref<string[]>([])
+
+const handleSelection = ({ xy, first, last }: DragState) => {
+  if (first) {
+    selection.value = { x: xy[0], y: xy[1], width: 0, height: 0 }
+    return
+  }
+
+  if (last) {
+    const { x, y } = applyToPoint(inverseMatrix.value, {
+      x: selection.value.width >= 0 ? selection.value.x : selection.value.x + selection.value.width,
+      y: selection.value.height >= 0 ? selection.value.y : selection.value.y + selection.value.height,
+    })
+
+    const normalizedSelection = {
+      x,
+      y,
+      width: Math.abs(selection.value.width) * inverseMatrix.value.a,
+      height: Math.abs(selection.value.height) * inverseMatrix.value.a,
+    }
+
+    selectedNodes.value = Object.values(nodes.value)
+      .filter((node) => isRectsIntersect(node.position, normalizedSelection))
+      .map((node) => node.id)
+
+    selection.value = null
+    return
+  }
+
+  selection.value.height = xy[1] - selection.value.y
+  selection.value.width = xy[0] - selection.value.x
+}
+
+const canvasDragHandler = (dragState: DragState) => {
+  const { metaKey, ctrlKey, event } = dragState
+  if (event.target !== root.value) return
+
+  if (metaKey || ctrlKey) return handleCanvasDrag(dragState)
+
+  return handleSelection(dragState)
 }
 
 const canvasZoomHandler = ({ event, delta }) => {
@@ -35,9 +78,11 @@ const canvasZoomHandler = ({ event, delta }) => {
   matrix.value = compose(scale(zoom, zoom, event.x, event.y), matrix.value)
 }
 
+const selection = ref<Rect | null>(null)
+
 const nodeDragHandler =
   (node) =>
-  ({ delta }) => {
+  ({ delta }: DragState) => {
     node.position.x += (delta[0] * 1) / matrix.value.a
     node.position.y += (delta[1] * 1) / matrix.value.a
   }
@@ -66,17 +111,16 @@ const addDataNode = (node) => {
     class="absolute inset-0 overflow-hidden w-screen h-screen"
   >
     <div
-      class="absolute h-2 w-2 bg-violet-500 transform -translate-x-1/2 -translate-y-1/2 rounded-full"
-      :style="`left: ${applyToPoint(matrix, [0, 0])[0]}px; top: ${applyToPoint(matrix, [0, 0])[1]}px`"
+      v-if="selection"
+      class="bg-blue-300/50 absolute z-20"
+      :style="`
+        left: ${selection.width >= 0 ? selection.x : selection.x + selection.width}px;
+        top:${selection.height >= 0 ? selection.y : selection.y + selection.height}px; 
+        width: ${Math.abs(selection.width)}px; height: ${Math.abs(selection.height)}px;`"
     ></div>
 
     <!-- Canvas -->
     <div ref="canvas" :style="`transform: ${toCSS(matrix)}`" class="h-0 w-0">
-      <div
-        class="absolute h-2 w-2 bg-red-500 transform -translate-x-1/2 -translate-y-1/2 rounded-full"
-        :style="`left: 0px; top: 0px`"
-      ></div>
-
       <!-- Edges -->
       <!-- left-[2px] is hack you fix border size of node-->
       <svg class="absolute left-[2px] z-10 overflow-visible w-screen h-screen pointer-events-none">
@@ -126,7 +170,8 @@ const addDataNode = (node) => {
           </svg>
         </button>
         <div
-          class="h-32 w-96 box-border rounded-md overflow-hidden border-2 border-blue-700 shadow shadow-blue-300 bg-white flex flex-col"
+          class="h-32 w-96 box-border rounded-md overflow-hidden border-2 bg-white flex flex-col"
+          :class="selectedNodes.includes(node.id) ? 'border-blue-700 shadow shadow-blue-300' : 'border-gray-700'"
         >
           <div class="py-1 px-2 pl-4 border-b-2">title</div>
           <!--

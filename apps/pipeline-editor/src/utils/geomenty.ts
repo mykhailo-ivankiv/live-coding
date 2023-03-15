@@ -1,6 +1,15 @@
 import { isRangesIntersect, Range } from './range'
 
 export type Rect = { x: number; y: number; width: number; height: number }
+
+export const isRectsIntersect = (rectA: Rect, rectB: Rect) => {
+  const xRange1 = { start: rectA.x, end: rectA.x + rectA.width }
+  const xRange2 = { start: rectB.x, end: rectB.x + rectB.width }
+  const yRange1 = { start: rectA.y, end: rectA.y + rectA.height }
+  const yRange2 = { start: rectB.y, end: rectB.y + rectB.height }
+  return isRangesIntersect(xRange1, xRange2) && isRangesIntersect(yRange1, yRange2)
+}
+
 export const findYPosition = (x: number, approximateY: number, width: number, height: number, rects: Rect[]) => {
   const margin = 20
   let yRange = { start: approximateY - margin, end: approximateY + height + margin }

@@ -8,7 +8,7 @@ const tail = 30
 <template>
   <g>
     <path
-      class="stroke-2 stroke-blue-700 fill-none"
+      class="stroke-2 stroke-gray-700 fill-none"
       :d="
         to.x - from.x >= tail * 2
           ? `
