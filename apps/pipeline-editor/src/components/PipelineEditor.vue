@@ -1,7 +1,5 @@
 <script setup lang="ts">
-// import JsonEditor from './JsonEditor.vue'
-// import JavascriptEditor from './JavascriptEditor.vue'
-import { translate, toCSS, compose, scale } from 'transformation-matrix'
+import { translate, toCSS, compose, scale, applyToPoint } from 'transformation-matrix'
 import { ref } from 'vue'
 import Edge from './Edge.vue'
 import { findYPosition } from '../utils/geomenty'
@@ -28,16 +26,13 @@ const canvasDragHandler = ({ delta: [x, y], event }) => {
 }
 
 const canvasZoomHandler = ({ event, delta }) => {
-  const width = canvas.value?.clientWidth ?? 0
-  const height = canvas.value?.clientHeight ?? 0
-
   const zoom = 1 + delta[1] / 1000
 
   // matrix.current.a === zoom
   if (zoom > 1 && matrix.value.a >= 4) return matrix
   if (zoom < 1 && matrix.value.a <= 0.1) return matrix
 
-  matrix.value = compose(scale(zoom, zoom, event.x - width / 2, event.y - height / 2), matrix.value)
+  matrix.value = compose(scale(zoom, zoom, event.x, event.y), matrix.value)
 }
 
 const nodeDragHandler =
@@ -70,8 +65,18 @@ const addDataNode = (node) => {
     v-wheel="canvasZoomHandler"
     class="absolute inset-0 overflow-hidden w-screen h-screen"
   >
+    <div
+      class="absolute h-2 w-2 bg-violet-500 transform -translate-x-1/2 -translate-y-1/2 rounded-full"
+      :style="`left: ${applyToPoint(matrix, [0, 0])[0]}px; top: ${applyToPoint(matrix, [0, 0])[1]}px`"
+    ></div>
+
     <!-- Canvas -->
-    <div ref="canvas" :style="`transform: ${toCSS(matrix)}`" class="h-full">
+    <div ref="canvas" :style="`transform: ${toCSS(matrix)}`" class="h-0 w-0">
+      <div
+        class="absolute h-2 w-2 bg-red-500 transform -translate-x-1/2 -translate-y-1/2 rounded-full"
+        :style="`left: 0px; top: 0px`"
+      ></div>
+
       <!-- Edges -->
       <!-- left-[2px] is hack you fix border size of node-->
       <svg class="absolute left-[2px] z-10 overflow-visible w-screen h-screen pointer-events-none">

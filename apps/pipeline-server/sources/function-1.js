@@ -1,1 +1,1 @@
-export default a => a + 12;
+export default a => a + 1;
