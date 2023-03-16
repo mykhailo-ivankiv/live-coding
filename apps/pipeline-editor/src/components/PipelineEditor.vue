@@ -7,7 +7,7 @@ import { DragState } from '@vueuse/gesture'
 
 const canvas = ref(null)
 const root = ref(null)
-const matrix = ref(translate(0, 0))
+const matrix = ref(translate(400, 0))
 const inverseMatrix = computed(() => inverse(matrix.value))
 
 const pipeline = await (await fetch('http://localhost:3000/pipelines/1')).json()
