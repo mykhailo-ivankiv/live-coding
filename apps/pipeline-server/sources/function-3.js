@@ -1,1 +1,1 @@
-export default b => b * 8;
+export default b => b.map(b => b * 8);

@@ -2,14 +2,10 @@
 import { translate, toCSS, compose, scale, inverse, applyToPoint } from 'transformation-matrix'
 import { computed, ref } from 'vue'
 import Edge from './Edge.vue'
-import Node from './Node.vue'
+import DataNode from './Node.vue'
 import { findYPosition, isRectsIntersect, Rect } from '../utils/geomenty'
 import { DragState } from '@vueuse/gesture'
-
-type Rectangle = { x: number; y: number; width: number; height: number }
-type Node = { id: string; source: string; type: 'data' | 'function' | 'cache'; position: Rectangle; title: string }
-type Edge = { id: string; source: string; target: string }
-type Pipeline = { id: string; nodes: Node[]; edges: Edge[] }
+import { Pipeline, Node } from '@live/pipeline-types'
 
 const canvas = ref(null)
 const root = ref(null)
@@ -19,7 +15,7 @@ const inverseMatrix = computed(() => inverse(matrix.value))
 const pipeline: Pipeline = await (await fetch('http://localhost:3000/pipelines/1')).json()
 
 const nodes = ref(
-  pipeline.nodes.reduce((acc, node) => {
+  pipeline.nodes.reduce<Record<string, Node>>((acc, node) => {
     acc[node.id] = node
     return acc
   }, {}),
@@ -96,7 +92,7 @@ const canvasZoomHandler = ({ event, delta }) => {
 
 const selection = ref<Rect | null>(null)
 
-const addDataNode = (node) => {
+const addNode = (node: Node) => {
   const width = 380
   const height = 124
 
@@ -146,7 +142,13 @@ const addDataNode = (node) => {
         />
       </svg>
 
-      <Node v-for="node in nodes" :node="node" :matrix="matrix" :isSelected="selectedNodes.includes(node.id)" />
+      <DataNode
+        v-for="node in nodes"
+        :node="node"
+        :matrix="matrix"
+        :isSelected="selectedNodes.includes(node.id)"
+        @addNode="addNode"
+      />
     </div>
   </div>
 </template>

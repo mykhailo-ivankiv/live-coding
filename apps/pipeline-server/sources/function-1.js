@@ -1,1 +1,1 @@
-export default a => a + 1;
+export default a => a.map((a)=> a + 1);

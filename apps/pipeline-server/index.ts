@@ -5,11 +5,7 @@ import fs from 'fs/promises'
 import bodyParser from 'body-parser'
 import WebSocket, { WebSocketServer } from 'ws'
 import path from 'path'
-
-type Rectangle = { x: number; y: number; width: number; height: number }
-type Node = { id: string; source: string; type: 'data' | 'function' | 'cache'; position: Rectangle; title: string }
-type Edge = { id: string; source: string; target: string }
-type Pipeline = { id: string; nodes: Node[]; edges: Edge[] }
+import { Pipeline } from '@live/pipeline-types'
 
 const app = express()
 const port = 3000
@@ -18,8 +14,8 @@ const wss = new WebSocketServer({ port: '3001' })
 wss.on('connection', function connection(ws) {
   ws.on('error', console.error)
 })
-const broadcastMessage = (message) => {
-  wss.clients.forEach(function each(client) {
+const broadcastMessage = (message: string) => {
+  wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(message)
     }
@@ -44,33 +40,34 @@ async function importFresh(modulePath: string) {
 
 // this is a very naive implementation, but it works for now
 const runPipeline = async (pipeline: Pipeline) => {
-  const sourceNodes = pipeline.nodes
-    .filter((node) => node.type === 'data')
-    .filter((node) => {
-      return !pipeline.edges.find((edge) => edge.target === node.id)
+  try {
+    const sourceNodes = pipeline.nodes
+      .filter((node) => node.type === 'data')
+      .filter((node) => !pipeline.edges.find((edge) => edge.target === node.id))
+
+    sourceNodes.map(async (node) => {
+      const sourceData = JSON.parse(await fs.readFile(`./sources/${node.source}`, 'utf-8'))
+      const targetFunctionNodes = pipeline.edges.filter((edge) => edge.source === node.id)
+
+      await Promise.all(
+        targetFunctionNodes
+          .map((edge) => pipeline.nodes.find((node) => node.id === edge.target))
+          .map(async (functionNode) => {
+            try {
+              const module = await importFresh(`./sources/${functionNode.source}`)
+              const data = await module.default(sourceData)
+
+              await fs.writeFile(`./sources/${functionNode.source}.cache`, JSON.stringify(data, null, 2))
+              broadcastMessage(`Source changed: ${functionNode.source}.cache`)
+            } catch (error) {
+              console.error(error)
+            }
+          }),
+      )
     })
-
-  sourceNodes.map(async (node) => {
-    const sourceData = JSON.parse(await fs.readFile(`./sources/${node.source}`, 'utf-8'))
-    const targetFunctionNodes = pipeline.edges.filter((edge) => edge.source === node.id)
-
-    await Promise.all(
-      targetFunctionNodes
-        .map((edge) => pipeline.nodes.find((node) => node.id === edge.target))
-        .map(async (functionNode) => {
-          const module = await importFresh(`./sources/${functionNode.source}`)
-          const data = await module.default(sourceData)
-
-          console.log(module.default.toString())
-
-          const targetDataNodeId = pipeline.edges.find((edge) => edge.source === functionNode.id).target
-          const targetDataNode = pipeline.nodes.find((node) => node.id === targetDataNodeId)
-
-          await fs.writeFile(`./sources/${targetDataNode.source}`, JSON.stringify(data, null, 2))
-          broadcastMessage(`Source changed: ${targetDataNode.source}`)
-        }),
-    )
-  })
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 app.use(helmet({ contentSecurityPolicy: false }))

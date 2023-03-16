@@ -27,7 +27,7 @@ const code = ref(await getData())
 </script>
 
 <template>
-  <div class="p-1 text-sm">
+  <div class="p-1 text-xs">
     <HighlightAsJson :text="code" />
   </div>
 </template>
