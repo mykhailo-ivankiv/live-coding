@@ -56,9 +56,8 @@ const nodeDragHandler =
       Using css transform results in incorrect tooltip positioning
       https://github.com/codemirror/dev/issues/324
     -->
-      <iframe v-if="node.type === 'data'" class="h-full w-full" :src="`/edit/${node.source}`" />
+      <iframe v-if="node.source" class="h-full w-full" :src="`/edit/${node.source}`" />
 
-      <iframe v-else class="h-full w-full" :src="`/edit/${node.source}`" />
       <!-- <JsonEditor v-if="node?.type === 'data'" />-->
       <!-- <JavascriptEditor v-else-if="node?.type === 'function'" />-->
 

@@ -1,7 +1,7 @@
 export type Rectangle = { x: number; y: number; width: number; height: number }
 export type Node = {
   id: string
-  source: string
+  source?: string
   type: 'data' | 'function'
   position: Rectangle
   title: string

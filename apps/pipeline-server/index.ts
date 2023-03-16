@@ -73,7 +73,8 @@ const runPipeline = async (pipeline: Pipeline) => {
 app.use(helmet({ contentSecurityPolicy: false }))
 app.use(cors())
 app.use(bodyParser.text())
-// app.use(bodyParser.json())
+app.use(bodyParser.json())
+
 app.get('/pipelines/1', async (req, res) => {
   if (!pipeline) {
     pipeline = JSON.parse(await fs.readFile('./sources/pipeline.json', 'utf-8'))
@@ -82,6 +83,29 @@ app.get('/pipelines/1', async (req, res) => {
   await runPipeline(pipeline)
 
   return res.json(pipeline)
+})
+
+app.put('/pipelines/1', async (req, res) => {
+  if (!pipeline) {
+    pipeline = JSON.parse(await fs.readFile('./sources/pipeline.json', 'utf-8'))
+  }
+
+  pipeline = req.body
+
+  await Promise.all(
+    pipeline.nodes.map(async (node: any) => {
+      if (!node.source && node.type === 'function') {
+        node.source = `${node.id}.js`
+        node.cache = `${node.source}.cache`
+        await fs.writeFile(`./sources/${node.source}`, 'export default (data) => data')
+        await fs.writeFile(`./sources/${node.source}.cache`, '')
+      }
+    }),
+  )
+
+  await runPipeline(pipeline)
+
+  res.json(pipeline)
 })
 
 app.put('/sources/:source', async (req, res) => {

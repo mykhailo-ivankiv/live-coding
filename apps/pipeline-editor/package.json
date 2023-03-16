@@ -17,6 +17,7 @@
     "@vueuse/gesture": "2.0.0-beta.1",
     "codemirror": "^6.0.1",
     "transformation-matrix": "^2.15.0",
+    "uuid": "^9.0.0",
     "vue": "^3.2.45",
     "vue-codemirror": "^6.1.1",
     "vue-router": "4"
