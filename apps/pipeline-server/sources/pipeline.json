@@ -3,7 +3,7 @@
   "nodes": [
     {
       "id": "node-0",
-      "title": "Data source",
+      "title": "Data source (json)",
       "source": "data-0.json",
       "type": "data",
       "position": { "x": 40, "y": 200, "width": 380, "height": 124 }

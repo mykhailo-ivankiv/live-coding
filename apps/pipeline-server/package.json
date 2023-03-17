@@ -14,8 +14,8 @@
   "devDependencies": {
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",
-    "tsx": "^3.12.3",
-    "typescript": "5.0.0-beta"
+    "tsx": "^3.12.5",
+    "typescript": "5.0.2"
   },
   "dependencies": {
     "@live/pipeline-types": "workspace:^1.0.0",
