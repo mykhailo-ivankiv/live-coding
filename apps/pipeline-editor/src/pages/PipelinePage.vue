@@ -24,7 +24,8 @@ import PipelineEditor from '../components/PipelineEditor.vue'
 
     <h3 class="my-4 text-sm font-bold">Key bindings:</h3>
     <ul class="my-4 text-sm list-disc list-inside">
-      <li>⌘+n — create node</li>
+      <li>⌘+k — create node</li>
+      <li>/ — open command palette</li>
     </ul>
   </article>
   <PipelineEditor />

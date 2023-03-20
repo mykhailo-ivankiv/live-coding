@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { Dialog, DialogOverlay, Combobox, ComboboxInput, ComboboxOptions, ComboboxOption } from '@headlessui/vue'
+import {
+  Dialog,
+  DialogOverlay,
+  Combobox,
+  ComboboxInput,
+  ComboboxOptions,
+  ComboboxOption,
+  TransitionRoot,
+  TransitionChild,
+} from '@headlessui/vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
 import { defineProps, defineEmits, ref, computed } from 'vue'
 
@@ -27,53 +36,72 @@ const filteredCommands = computed(() =>
 )
 
 defineProps<{ isOpen: boolean }>()
+const log = console.log
 </script>
 
 <template>
-  <Dialog :open="isOpen" @close="emit('close')" class="fixed inset-0 p-4 pt-[25vh] overflow-y-auto">
-    <DialogOverlay class="fixed inset-0 bg-gray-500/75" />
-    <Combobox
-      @update:modelValue="
-        (value) => {
-          emit('change', value)
-        }
-      "
-      as="div"
-      class="relative bg-white max-w-xl mx-auto rounded-xl shadow-2xl ring-1 ring-black/5 divide-y divide-gray-100 overflow-hidden"
-    >
-      <div class="flex items-center px-4 gap-1">
-        <MagnifyingGlassIcon class="h-6 w-6 text-gray-500" />
-        <ComboboxInput
-          @change="query = $event.target.value"
-          class="w-full bg-transparent border-0 focus:ring-0 focus-visible:outline-none text-sm text-gray-800 placeholder-gray-400 h-12"
-          placeholder="Search..."
-        />
-      </div>
+  <TransitionRoot :show="isOpen" as="Fragment" @afterLeave="query = ''">
+    <Dialog @close="emit('close')" class="fixed inset-0 p-4 pt-[25vh] overflow-y-auto">
+      <TransitionChild
+        enter="duration-300 ease-out"
+        enterFrom="opacity-0"
+        enterTo="opacity-100"
+        leave="duration-200 ease-in"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
+      >
+        <DialogOverlay class="fixed inset-0 bg-gray-500/75" />
+      </TransitionChild>
 
-      <ComboboxOptions v-if="filteredCommands.length" static class="py-4 text-sm max-h-96 overflow-y-auto">
-        <ComboboxOption
-          v-for="command in filteredCommands"
-          :key="command.id"
-          v-slot="{ active, selected }"
-          :value="command.id"
+      <TransitionChild
+        enter="duration-300 ease-out"
+        enterFrom="opacity-0 scale-95"
+        enterTo="opacity-100 scale-100"
+        leave="duration-200 ease-in"
+        leaveFrom="opacity-100 scale-100"
+        leaveTo="opacity-0 scale-95"
+      >
+        <Combobox
+          @update:modelValue="(value) => emit('change', value.id)"
+          as="div"
+          class="relative bg-white max-w-xl mx-auto rounded-xl shadow-2xl ring-1 ring-black/5 divide-y divide-gray-100 overflow-hidden"
         >
-          <div class="px-4 py-2 space-x-1" :class="{ 'bg-indigo-600': active, 'bg-white': !active }">
-            <span class="font-medium" :class="{ 'text-white': active, 'text-gray-900': !active }">{{
-              command.title
-            }}</span>
-            <span
-              class="text-xs"
-              :class="{ 'text-indigo-200': active, 'text-gray-400': !active }"
-              v-for="tag in command.tags"
-              >{{ tag }}</span
-            >
+          <div class="flex items-center px-4 gap-1">
+            <MagnifyingGlassIcon class="h-6 w-6 text-gray-500" />
+            <ComboboxInput
+              @change="query = $event.target.value"
+              :displayValue="(command) => command.title"
+              class="w-full bg-transparent border-0 focus:ring-0 focus-visible:outline-none text-sm text-gray-800 placeholder-gray-400 h-12"
+              placeholder="Search..."
+            />
           </div>
-        </ComboboxOption>
-      </ComboboxOptions>
 
-      <div v-if="query !== '' && filteredCommands.length === 0" class="p-4 text-sm text-gray-500">
-        No results found.
-      </div>
-    </Combobox>
-  </Dialog>
+          <ComboboxOptions v-if="filteredCommands.length" static class="py-4 text-sm max-h-96 overflow-y-auto">
+            <ComboboxOption
+              v-for="command in filteredCommands"
+              :key="command.id"
+              v-slot="{ active, selected }"
+              :value="command"
+            >
+              <div class="px-4 py-2 space-x-1" :class="{ 'bg-indigo-600': active, 'bg-white': !active }">
+                <span class="font-medium" :class="{ 'text-white': active, 'text-gray-900': !active }">{{
+                  command.title
+                }}</span>
+                <span
+                  class="text-xs"
+                  :class="{ 'text-indigo-200': active, 'text-gray-400': !active }"
+                  v-for="tag in command.tags"
+                  >{{ tag }}</span
+                >
+              </div>
+            </ComboboxOption>
+          </ComboboxOptions>
+
+          <div v-if="query !== '' && filteredCommands.length === 0" class="p-4 text-sm text-gray-500">
+            No results found.
+          </div>
+        </Combobox>
+      </TransitionChild>
+    </Dialog>
+  </TransitionRoot>
 </template>

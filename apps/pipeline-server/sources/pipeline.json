@@ -6,7 +6,7 @@
       "title": "Data source (json)",
       "source": "data-0.json",
       "type": "data",
-      "position": { "x": 40, "y": 200, "width": 380, "height": 124 }
+      "position": { "x": 0, "y": 0, "width": 380, "height": 124 }
     },
     {
       "id": "node-1",
@@ -14,7 +14,7 @@
       "source": "function-1.js",
       "cache": "function-1.js.cache",
       "type": "function",
-      "position": { "x": 480, "y": 200, "width": 380, "height": 124 }
+      "position": { "x": 440, "y": 0, "width": 380, "height": 124 }
     },
     {
       "id": "node-3",
@@ -22,7 +22,7 @@
       "source": "function-3.js",
       "cache": "function-3.js.cache",
       "type": "function",
-      "position": { "x": 480, "y": 350, "width": 380, "height": 124 }
+      "position": { "x": 440, "y": 150, "width": 380, "height": 124 }
     }
   ],
   "edges": [

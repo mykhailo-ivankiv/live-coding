@@ -11,7 +11,7 @@ import CommandPalette from './CommandPalette.vue'
 
 const canvas = ref(null)
 const root = ref(null)
-const matrix = ref(translate(400, 0))
+const matrix = ref(translate(400, 200))
 const inverseMatrix = computed(() => inverse(matrix.value))
 
 const pipeline = ref<Pipeline>(await (await fetch('http://localhost:3000/pipelines/1')).json())
@@ -48,7 +48,6 @@ document.addEventListener(
 )
 
 const handleCanvasDrag = ({ delta: [x, y] }: DragState) => {
-  // Do something with dragState
   matrix.value = compose(translate(x, y), matrix.value)
 }
 
@@ -202,13 +201,14 @@ const handleCanvasClick = (ev: MouseEvent) => {
 }
 
 const isCommandPaletteOpen = ref(false)
-const closeCommandPalette = () => {
-  console.log('close')
-  return (isCommandPaletteOpen.value = false)
-}
+
 const executeCommand = (command: string) => {
-  console.log('execute', command)
   isCommandPaletteOpen.value = false
+
+  if (command === 'add-json-data') {
+    const newNode = createNode('data', 'data.json', undefined, pipeline.value.nodes)
+    pipeline.value.nodes.push(newNode)
+  }
 }
 
 const changeNodePosition = (nodeId: string, newPosition: Rect) => {
@@ -217,7 +217,7 @@ const changeNodePosition = (nodeId: string, newPosition: Rect) => {
 </script>
 
 <template>
-  <CommandPalette :is-open="isCommandPaletteOpen" @close="closeCommandPalette" @change="executeCommand" />
+  <CommandPalette :is-open="isCommandPaletteOpen" @close="isCommandPaletteOpen = false" @change="executeCommand" />
   <div
     ref="root"
     @click="handleCanvasClick"
