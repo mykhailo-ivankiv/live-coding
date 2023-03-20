@@ -7,6 +7,7 @@ import { findYPosition, isRectsIntersect, Rect } from '../utils/geomenty'
 import { DragState } from '@vueuse/gesture'
 import { Pipeline, Node } from '@live/pipeline-types'
 import { v4 as uuidv4 } from 'uuid'
+import CommandPalette from './CommandPalette.vue'
 
 const canvas = ref(null)
 const root = ref(null)
@@ -15,6 +16,9 @@ const inverseMatrix = computed(() => inverse(matrix.value))
 
 const pipeline = ref<Pipeline>(await (await fetch('http://localhost:3000/pipelines/1')).json())
 
+type EditorMode = 'navigate' | 'add'
+const editorMode = ref<EditorMode>('navigate')
+
 const nodes = computed(() =>
   pipeline.value.nodes.reduce<Record<string, Node>>((acc, node) => {
     acc[node.id] = node
@@ -22,15 +26,26 @@ const nodes = computed(() =>
   }, {}),
 )
 
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Delete' || e.key === 'Backspace') {
-    selectedNodes.value.forEach((id) => {
-      pipeline.value.edges = pipeline.value.edges.filter((edge) => edge.source !== id && edge.target !== id)
-      delete nodes.value[id]
-    })
-    selectedNodes.value = []
-  }
-})
+document.addEventListener(
+  'keydown',
+  (e) => {
+    if (e.key === '/') {
+      e.preventDefault()
+      e.stopPropagation()
+      isCommandPaletteOpen.value = true
+      return
+    }
+
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      selectedNodes.value.forEach((id) => {
+        pipeline.value.edges = pipeline.value.edges.filter((edge) => edge.source !== id && edge.target !== id)
+        delete nodes.value[id]
+      })
+      selectedNodes.value = []
+    }
+  },
+  true,
+)
 
 const handleCanvasDrag = ({ delta: [x, y] }: DragState) => {
   // Do something with dragState
@@ -71,6 +86,8 @@ const handleSelection = ({ xy, first, last }: DragState) => {
 }
 
 const canvasDragHandler = (dragState: DragState) => {
+  if (editorMode.value !== 'navigate') return
+
   const { metaKey, ctrlKey, event } = dragState
   if (event.target !== root.value) return
 
@@ -90,24 +107,61 @@ const canvasZoomHandler = ({ event, delta }) => {
 
 const selection = ref<Rect | null>(null)
 
-const addNode = async (relatedNode: Node) => {
-  const width = 380
-  const height = 124
+const createNode = (
+  type: Node['type'],
+  title: string,
+  position?: Rect & { strict?: false },
+  existedNodes?: Node[] = [],
+): Node => {
+  const id = uuidv4()
 
-  const reservedPositions = Object.values(nodes.value).map((node) => node.position)
+  let actualPosition: Rect | undefined = position
 
-  const x = relatedNode.position.x + relatedNode.position.width + 60
-  const y = findYPosition(x, relatedNode.position.y, width, height, reservedPositions)
+  if (!position) {
+    const reservedPositions = existedNodes.map((node) => node.position)
+    actualPosition = {
+      x: 0,
+      width: 380,
+      height: 124,
+      y: findYPosition(0, 0, 380, 124, reservedPositions),
+    }
+  }
 
-  const id = 'node-' + uuidv4()
+  if (position?.strict === false) {
+    const reservedPositions = existedNodes.map((node) => node.position)
+    actualPosition = {
+      x: position?.x ?? 0,
+      width: position?.width ?? 380,
+      height: position?.height ?? 124,
+      y: findYPosition(
+        position?.x ?? 0,
+        position?.y ?? 0,
+        position?.width ?? 380,
+        position?.height ?? 124,
+        reservedPositions,
+      ),
+    }
+  }
 
-  pipeline.value.nodes.push({
-    id,
-    type: 'function',
-    title: `function-${pipeline.value.nodes.length}`,
-    position: { x, y, width, height },
-  })
-  pipeline.value.edges.push({ id: uuidv4(), source: relatedNode.id, target: id })
+  return { id, type, title: `some title`, position: actualPosition as Rect }
+}
+
+const connectNodes = async (sourceNode: Node) => {
+  const newNode = createNode(
+    'function',
+    `function-${pipeline.value.nodes.length}`,
+    {
+      x: sourceNode.position.x + sourceNode.position.width + 60,
+      y: sourceNode.position.y,
+      width: 380,
+      height: 124,
+      strict: false,
+    },
+    pipeline.value.nodes,
+  )
+
+  pipeline.value.nodes.push(newNode)
+  pipeline.value.edges.push({ id: uuidv4(), source: sourceNode.id, target: newNode.id })
 
   pipeline.value = await (
     await fetch('http://localhost:3000/pipelines/1', {
@@ -117,14 +171,60 @@ const addNode = async (relatedNode: Node) => {
     })
   ).json()
 }
+
+document.addEventListener(
+  'keydown',
+  (e) => {
+    if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      editorMode.value = 'add'
+    }
+  },
+  true,
+)
+
+const handleCanvasClick = (ev: MouseEvent) => {
+  if (editorMode.value === 'add') {
+    const { x, y } = applyToPoint(inverseMatrix.value, { x: ev.x, y: ev.y })
+
+    const newNode = {
+      id: uuidv4(),
+      type: undefined,
+      title: '',
+      // -20 to put the node input in the center of the cursor
+      position: { x: x - 20, y: y - 20, width: 380, height: 40 },
+    }
+
+    pipeline.value.nodes.push(newNode)
+
+    editorMode.value = 'navigate'
+  }
+}
+
+const isCommandPaletteOpen = ref(false)
+const closeCommandPalette = () => {
+  console.log('close')
+  return (isCommandPaletteOpen.value = false)
+}
+const executeCommand = (command: string) => {
+  console.log('execute', command)
+  isCommandPaletteOpen.value = false
+}
+
+const changeNodePosition = (nodeId: string, newPosition: Rect) => {
+  nodes.value[nodeId].position = newPosition
+}
 </script>
 
 <template>
+  <CommandPalette :is-open="isCommandPaletteOpen" @close="closeCommandPalette" @change="executeCommand" />
   <div
     ref="root"
+    @click="handleCanvasClick"
     v-drag="canvasDragHandler"
     v-wheel="canvasZoomHandler"
     class="absolute inset-0 overflow-hidden w-screen h-screen"
+    :class="{ 'cursor-crosshair': editorMode === 'add' }"
   >
     <div
       v-if="selection"
@@ -155,14 +255,17 @@ const addNode = async (relatedNode: Node) => {
         />
       </svg>
 
-      <DataNode
-        v-for="node in nodes"
-        :key="node.id"
-        :node="node"
-        :matrix="matrix"
-        :isSelected="selectedNodes.includes(node.id)"
-        @addNode="addNode"
-      />
+      <div :class="{ 'pointer-events-none': editorMode === 'add' }">
+        <DataNode
+          v-for="node in nodes"
+          :key="node.id"
+          :node="node"
+          :matrix="matrix"
+          :isSelected="selectedNodes.includes(node.id)"
+          @addNode="connectNodes"
+          @changePosition="changeNodePosition"
+        />
+      </div>
     </div>
   </div>
 </template>

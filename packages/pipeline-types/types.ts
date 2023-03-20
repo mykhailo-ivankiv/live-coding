@@ -2,7 +2,8 @@ export type Rectangle = { x: number; y: number; width: number; height: number }
 export type Node = {
   id: string
   source?: string
-  type: 'data' | 'function'
+  cache?: string
+  type: 'data' | 'function' | undefined
   position: Rectangle
   title: string
 }
