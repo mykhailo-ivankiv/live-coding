@@ -6,6 +6,7 @@ import { Node } from '@live/pipeline-types'
 import SelectNodeType from './SelectNodeType.vue'
 
 const props = defineProps<{
+  pipelineId: string
   node: Node
   matrix: Matrix
   isSelected: boolean
@@ -56,13 +57,13 @@ const nodeDragHandler = ({ delta }: DragState) => {
         https://github.com/codemirror/dev/issues/324
       -->
       <div class="flex-1 overflow-hidden">
-        <iframe v-if="node.source" class="h-full w-full" :src="`/edit/${node.source}`" />
+        <iframe v-if="node.source" class="h-full w-full" :src="`/edit/${pipelineId}/${node.source}`" />
       </div>
 
       <!-- <JsonEditor v-if="node?.type === 'data'" />-->
       <!-- <JavascriptEditor v-else-if="node?.type === 'function'" />-->
 
-      <iframe v-if="node.cache" class="border-t h-8 w-full" :src="`/view/${node.cache}`" />
+      <iframe v-if="node.cache" class="border-t h-8 w-full" :src="`/view/${pipelineId}/${node.cache}`" />
     </template>
   </div>
 </template>

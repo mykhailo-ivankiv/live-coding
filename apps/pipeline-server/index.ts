@@ -46,7 +46,7 @@ const runPipeline = async (pipeline: Pipeline) => {
       .filter((node) => !pipeline.edges.find((edge) => edge.target === node.id))
 
     sourceNodes.map(async (node) => {
-      const sourceData = JSON.parse(await fs.readFile(`./sources/${node.source}`, 'utf-8'))
+      const sourceData = JSON.parse(await fs.readFile(`./sources/${pipeline.id}/${node.source}`, 'utf-8'))
       const targetFunctionNodes = pipeline.edges.filter((edge) => edge.source === node.id)
 
       await Promise.all(
@@ -54,10 +54,10 @@ const runPipeline = async (pipeline: Pipeline) => {
           .map((edge) => pipeline.nodes.find((node) => node.id === edge.target))
           .map(async (functionNode) => {
             try {
-              const module = await importFresh(`./sources/${functionNode.source}`)
+              const module = await importFresh(`./sources/${pipeline.id}/${functionNode.source}`)
               const data = await module.default(sourceData)
 
-              await fs.writeFile(`./sources/${functionNode.source}.cache`, JSON.stringify(data, null, 2))
+              await fs.writeFile(`./sources/${pipeline.id}/${functionNode.source}.cache`, JSON.stringify(data, null, 2))
               broadcastMessage(`Source changed: ${functionNode.source}.cache`)
             } catch (error) {
               console.error(error)
@@ -75,9 +75,10 @@ app.use(cors())
 app.use(bodyParser.text())
 app.use(bodyParser.json())
 
-app.get('/pipelines/1', async (req, res) => {
+app.get('/pipelines/:pipelineId', async (req, res) => {
+  const { pipelineId } = req.params
   if (!pipeline) {
-    pipeline = JSON.parse(await fs.readFile('./sources/pipeline.json', 'utf-8'))
+    pipeline = JSON.parse(await fs.readFile(`./sources/${pipelineId}/pipeline.json`, 'utf-8'))
   }
 
   await runPipeline(pipeline)
@@ -85,9 +86,10 @@ app.get('/pipelines/1', async (req, res) => {
   return res.json(pipeline)
 })
 
-app.put('/pipelines/1', async (req, res) => {
+app.put('/pipelines/:pipelineId', async (req, res) => {
+  const { pipelineId } = req.params
   if (!pipeline) {
-    pipeline = JSON.parse(await fs.readFile('./sources/pipeline.json', 'utf-8'))
+    pipeline = JSON.parse(await fs.readFile(`./sources/${pipelineId}/pipeline.json`, 'utf-8'))
   }
 
   pipeline = req.body
@@ -97,8 +99,8 @@ app.put('/pipelines/1', async (req, res) => {
       if (!node.source && node.type === 'function') {
         node.source = `${node.id}.js`
         node.cache = `${node.source}.cache`
-        await fs.writeFile(`./sources/${node.source}`, 'export default (data) => data')
-        await fs.writeFile(`./sources/${node.source}.cache`, '')
+        await fs.writeFile(`./sources/${pipelineId}/${node.source}`, 'export default (data) => data')
+        await fs.writeFile(`./sources/${pipelineId}/${node.source}.cache`, '')
       }
     }),
   )
@@ -108,12 +110,12 @@ app.put('/pipelines/1', async (req, res) => {
   res.json(pipeline)
 })
 
-app.put('/sources/:source', async (req, res) => {
-  const { source } = req.params
+app.put('/sources/:pipelineId/:source', async (req, res) => {
+  const { source, pipelineId } = req.params
   const content = req.body
 
   try {
-    await fs.writeFile(`./sources/${source}`, content)
+    await fs.writeFile(`./sources/${pipelineId}/${source}`, content)
     await runPipeline(pipeline)
 
     res.send('ok')
@@ -122,10 +124,10 @@ app.put('/sources/:source', async (req, res) => {
   }
 })
 
-app.get('/sources/:source', async (req, res) => {
-  const { source } = req.params
+app.get('/sources/:pipelineId/:source', async (req, res) => {
+  const { source, pipelineId } = req.params
   try {
-    const content = await fs.readFile(`./sources/${source}`, 'utf-8')
+    const content = await fs.readFile(`./sources/${pipelineId}/${source}`, 'utf-8')
 
     res.send(content)
   } catch (error) {

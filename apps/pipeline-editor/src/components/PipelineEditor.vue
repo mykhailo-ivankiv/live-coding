@@ -1,30 +1,25 @@
 <script setup lang="ts">
-import { translate, toCSS, compose, scale, inverse, applyToPoint } from 'transformation-matrix'
+import { translate, toCSS, compose, scale, inverse, applyToPoint, Point } from 'transformation-matrix'
 import { computed, ref } from 'vue'
 import Edge from './Edge.vue'
 import DataNode from './Node.vue'
-import { findYPosition, isRectsIntersect, Rect } from '../utils/geomenty'
+import { isRectsIntersect, Rect } from '../utils/geomenty'
 import { DragState } from '@vueuse/gesture'
-import { Pipeline, Node } from '@live/pipeline-types'
-import { v4 as uuidv4 } from 'uuid'
+import { Node } from '@live/pipeline-types'
 import CommandPalette from './CommandPalette.vue'
+import { usePipelineListStore } from '../stores/PipelineListStore'
+import { usePipelineStore } from '../stores/PipelineStore'
 
-const canvas = ref(null)
-const root = ref(null)
+const pipelineListStore = usePipelineListStore()
+await pipelineListStore.fetchPipelines()
+
+const pipelineStore = usePipelineStore()
+pipelineStore.init(pipelineListStore.getPipelineById('pipeline-1'))
+
 const matrix = ref(translate(400, 200))
-const inverseMatrix = computed(() => inverse(matrix.value))
-
-const pipeline = ref<Pipeline>(await (await fetch('http://localhost:3000/pipelines/1')).json())
 
 type EditorMode = 'navigate' | 'add'
 const editorMode = ref<EditorMode>('navigate')
-
-const nodes = computed(() =>
-  pipeline.value.nodes.reduce<Record<string, Node>>((acc, node) => {
-    acc[node.id] = node
-    return acc
-  }, {}),
-)
 
 document.addEventListener(
   'keydown',
@@ -37,10 +32,7 @@ document.addEventListener(
     }
 
     if (e.key === 'Delete' || e.key === 'Backspace') {
-      selectedNodes.value.forEach((id) => {
-        pipeline.value.edges = pipeline.value.edges.filter((edge) => edge.source !== id && edge.target !== id)
-        delete nodes.value[id]
-      })
+      selectedNodes.value.forEach((id) => pipelineStore.deleteNode(id))
       selectedNodes.value = []
     }
   },
@@ -59,20 +51,19 @@ const handleSelection = ({ xy, first, last }: DragState) => {
     return
   }
 
+  const { width, height, x: sx, y: sy } = selection.value as Rect
+
   if (last) {
-    const { x, y } = applyToPoint(inverseMatrix.value, {
-      x: selection.value.width >= 0 ? selection.value.x : selection.value.x + selection.value.width,
-      y: selection.value.height >= 0 ? selection.value.y : selection.value.y + selection.value.height,
-    })
+    const inverseMatrix = inverse(matrix.value)
+    const zoom = inverseMatrix.a
+    const [x, y] = applyToPoint(inverseMatrix, [
+      width >= 0 ? sx : sx + width, //
+      height >= 0 ? sy : sy + height,
+    ])
 
-    const normalizedSelection = {
-      x,
-      y,
-      width: Math.abs(selection.value.width) * inverseMatrix.value.a,
-      height: Math.abs(selection.value.height) * inverseMatrix.value.a,
-    }
+    const normalizedSelection = { x, y, width: Math.abs(width) * zoom, height: Math.abs(height) * zoom }
 
-    selectedNodes.value = Object.values(nodes.value)
+    selectedNodes.value = Object.values(pipelineStore.nodes)
       .filter((node) => isRectsIntersect(node.position, normalizedSelection))
       .map((node) => node.id)
 
@@ -80,15 +71,15 @@ const handleSelection = ({ xy, first, last }: DragState) => {
     return
   }
 
-  selection.value.height = xy[1] - selection.value.y
-  selection.value.width = xy[0] - selection.value.x
+  selection.value.height = xy[1] - sy
+  selection.value.width = xy[0] - sx
 }
 
 const canvasDragHandler = (dragState: DragState) => {
   if (editorMode.value !== 'navigate') return
 
   const { metaKey, ctrlKey, event } = dragState
-  if (event.target !== root.value) return
+  if (event.target !== event.currentTarget) return
 
   if (metaKey || ctrlKey) return handleCanvasDrag(dragState)
   return handleSelection(dragState)
@@ -106,69 +97,18 @@ const canvasZoomHandler = ({ event, delta }) => {
 
 const selection = ref<Rect | null>(null)
 
-const createNode = (
-  type: Node['type'],
-  title: string,
-  position?: Rect & { strict?: false },
-  existedNodes?: Node[] = [],
-): Node => {
-  const id = uuidv4()
+const createConnectedFunctionNode = async (sourceNode: Node) => {
+  const newNode = pipelineStore.createNode('function', `function-${pipelineStore.nodes.length}`, {
+    x: sourceNode.position.x + sourceNode.position.width + 60,
+    y: sourceNode.position.y,
+    width: 380,
+    height: 124,
+    strict: false,
+  })
+  await pipelineStore.addNode(newNode)
 
-  let actualPosition: Rect | undefined = position
-
-  if (!position) {
-    const reservedPositions = existedNodes.map((node) => node.position)
-    actualPosition = {
-      x: 0,
-      width: 380,
-      height: 124,
-      y: findYPosition(0, 0, 380, 124, reservedPositions),
-    }
-  }
-
-  if (position?.strict === false) {
-    const reservedPositions = existedNodes.map((node) => node.position)
-    actualPosition = {
-      x: position?.x ?? 0,
-      width: position?.width ?? 380,
-      height: position?.height ?? 124,
-      y: findYPosition(
-        position?.x ?? 0,
-        position?.y ?? 0,
-        position?.width ?? 380,
-        position?.height ?? 124,
-        reservedPositions,
-      ),
-    }
-  }
-
-  return { id, type, title: `some title`, position: actualPosition as Rect }
-}
-
-const connectNodes = async (sourceNode: Node) => {
-  const newNode = createNode(
-    'function',
-    `function-${pipeline.value.nodes.length}`,
-    {
-      x: sourceNode.position.x + sourceNode.position.width + 60,
-      y: sourceNode.position.y,
-      width: 380,
-      height: 124,
-      strict: false,
-    },
-    pipeline.value.nodes,
-  )
-
-  pipeline.value.nodes.push(newNode)
-  pipeline.value.edges.push({ id: uuidv4(), source: sourceNode.id, target: newNode.id })
-
-  pipeline.value = await (
-    await fetch('http://localhost:3000/pipelines/1', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(pipeline.value),
-    })
-  ).json()
+  const edge = pipelineStore.createEdge(sourceNode.id, newNode.id)
+  await pipelineStore.addEdge(edge)
 }
 
 document.addEventListener(
@@ -184,17 +124,11 @@ document.addEventListener(
 
 const handleCanvasClick = (ev: MouseEvent) => {
   if (editorMode.value === 'add') {
-    const { x, y } = applyToPoint(inverseMatrix.value, { x: ev.x, y: ev.y })
+    const inverseMatrix = inverse(matrix.value)
+    const { x, y } = applyToPoint(inverseMatrix, { x: ev.x, y: ev.y })
 
-    const newNode = {
-      id: uuidv4(),
-      type: undefined,
-      title: '',
-      // -20 to put the node input in the center of the cursor
-      position: { x: x - 20, y: y - 20, width: 380, height: 40 },
-    }
-
-    pipeline.value.nodes.push(newNode)
+    const newNode = pipelineStore.createNode(undefined, '', { x: x - 20, y: y - 20, width: 380, height: 40 })
+    pipelineStore.addNode(newNode)
 
     editorMode.value = 'navigate'
   }
@@ -206,20 +140,25 @@ const executeCommand = (command: string) => {
   isCommandPaletteOpen.value = false
 
   if (command === 'add-json-data') {
-    const newNode = createNode('data', 'data.json', undefined, pipeline.value.nodes)
-    pipeline.value.nodes.push(newNode)
+    const newNode = createNode('data', 'data.json', undefined, pipelineStore.value.nodes)
+    pipelineStore.value.nodes.push(newNode)
   }
 }
 
-const changeNodePosition = (nodeId: string, newPosition: Rect) => {
-  nodes.value[nodeId].position = newPosition
+const getNodeOutputPosition = (nodeId: string): Point => {
+  const { x, y, width, height } = (pipelineStore.getNodeById(nodeId) as Node).position
+  return { x: x + width, y: y + height / 2 }
+}
+const getNodeInputPosition = (nodeId: string): Point => {
+  const { x, y, height } = (pipelineStore.getNodeById(nodeId) as Node).position
+
+  return { x: x, y: y + height / 2 }
 }
 </script>
 
 <template>
   <CommandPalette :is-open="isCommandPaletteOpen" @close="isCommandPaletteOpen = false" @change="executeCommand" />
   <div
-    ref="root"
     @click="handleCanvasClick"
     v-drag="canvasDragHandler"
     v-wheel="canvasZoomHandler"
@@ -238,32 +177,27 @@ const changeNodePosition = (nodeId: string, newPosition: Rect) => {
     ></div>
 
     <!-- Canvas -->
-    <div ref="canvas" :style="`transform: ${toCSS(matrix)}`" class="h-0 w-0">
+    <div :style="`transform: ${toCSS(matrix)}`" class="h-0 w-0">
       <!-- Edges -->
       <!-- left-[2px] is hack you fix border size of node-->
       <svg class="absolute left-[2px] z-10 overflow-visible w-screen h-screen pointer-events-none">
         <Edge
-          v-for="{ source, target } in pipeline.edges"
-          :from="{
-            x: nodes[source].position.x + nodes[source].position.width,
-            y: nodes[source].position.y + nodes[source].position.height / 2,
-          }"
-          :to="{
-            x: nodes[target].position.x,
-            y: nodes[target].position.y + nodes[target].position.height / 2,
-          }"
+          v-for="{ source, target } in pipelineStore.edges"
+          :from="getNodeOutputPosition(source)"
+          :to="getNodeInputPosition(target)"
         />
       </svg>
 
       <div :class="{ 'pointer-events-none': editorMode === 'add' }">
         <DataNode
-          v-for="node in nodes"
+          :pipelineId="pipelineStore.id"
+          v-for="node in pipelineStore.nodes"
           :key="node.id"
           :node="node"
           :matrix="matrix"
           :isSelected="selectedNodes.includes(node.id)"
-          @addNode="connectNodes"
-          @changePosition="changeNodePosition"
+          @addNode="createConnectedFunctionNode"
+          @changePosition="pipelineStore.changeNodePosition"
         />
       </div>
     </div>

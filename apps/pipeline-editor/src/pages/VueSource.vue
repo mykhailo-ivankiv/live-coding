@@ -4,6 +4,8 @@ import { useRoute } from 'vue-router'
 import { ref } from 'vue'
 
 const sourceId = useRoute().params.sourceId
+const pipelineId = useRoute().params.pipelineId
+
 // Create WebSocket connection.
 const socket = new WebSocket('ws://localhost:3001')
 
@@ -22,7 +24,7 @@ socket.addEventListener('message', async (event) => {
   console.log('Message from server ', event.data)
 })
 
-const getData = async () => await (await fetch(`http://localhost:3000/sources/${sourceId}`)).text()
+const getData = async () => await (await fetch(`http://localhost:3000/sources/${pipelineId}/${sourceId}`)).text()
 const code = ref(await getData())
 </script>
 
