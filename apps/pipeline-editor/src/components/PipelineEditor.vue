@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { translate, toCSS, compose, scale, inverse, applyToPoint, Point } from 'transformation-matrix'
 import { computed, ref } from 'vue'
-import Edge from './Edge.vue'
+import NodeEdge from './NodeEdge.vue'
 import DataNode from './Node.vue'
-import { isRectsIntersect, Rect } from '../utils/geomenty'
+import { isRectsIntersect, normalizeRect, Rect, transformRect } from '../utils/geomenty'
 import { DragState } from '@vueuse/gesture'
 import { Node } from '@live/pipeline-types'
 import CommandPalette from './CommandPalette.vue'
@@ -17,9 +17,7 @@ const pipelineStore = usePipelineStore()
 pipelineStore.init(pipelineListStore.getPipelineById('pipeline-1'))
 
 const matrix = ref(translate(400, 200))
-
-type EditorMode = 'navigate' | 'add'
-const editorMode = ref<EditorMode>('navigate')
+const editorMode = ref<'navigate' | 'add'>('navigate')
 
 document.addEventListener(
   'keydown',
@@ -31,9 +29,16 @@ document.addEventListener(
       return
     }
 
+    if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+      e.preventDefault()
+      selectedNodes.value = pipelineStore.nodes.map(({ id }) => id)
+      return
+    }
+
     if (e.key === 'Delete' || e.key === 'Backspace') {
       selectedNodes.value.forEach((id) => pipelineStore.deleteNode(id))
       selectedNodes.value = []
+      return
     }
   },
   true,
@@ -45,34 +50,26 @@ const handleCanvasDrag = ({ delta: [x, y] }: DragState) => {
 
 const selectedNodes = ref<string[]>([])
 
-const handleSelection = ({ xy, first, last }: DragState) => {
+const handleSelection = ({ delta: [x, y], xy, first, last }: DragState) => {
   if (first) {
     selection.value = { x: xy[0], y: xy[1], width: 0, height: 0 }
     return
   }
 
-  const { width, height, x: sx, y: sy } = selection.value as Rect
-
   if (last) {
     const inverseMatrix = inverse(matrix.value)
-    const zoom = inverseMatrix.a
-    const [x, y] = applyToPoint(inverseMatrix, [
-      width >= 0 ? sx : sx + width, //
-      height >= 0 ? sy : sy + height,
-    ])
+    const selectionRectangle = transformRect(inverseMatrix, normalizedSelection.value as Rect)
 
-    const normalizedSelection = { x, y, width: Math.abs(width) * zoom, height: Math.abs(height) * zoom }
-
-    selectedNodes.value = Object.values(pipelineStore.nodes)
-      .filter((node) => isRectsIntersect(node.position, normalizedSelection))
+    selectedNodes.value = pipelineStore.nodes
+      .filter((node) => isRectsIntersect(node.position, selectionRectangle))
       .map((node) => node.id)
 
     selection.value = null
     return
   }
 
-  selection.value.height = xy[1] - sy
-  selection.value.width = xy[0] - sx
+  selection.value.height += y
+  selection.value.width += x
 }
 
 const canvasDragHandler = (dragState: DragState) => {
@@ -96,6 +93,7 @@ const canvasZoomHandler = ({ event, delta }) => {
 }
 
 const selection = ref<Rect | null>(null)
+const normalizedSelection = computed<Rect | null>(() => selection.value && normalizeRect(selection.value))
 
 const createConnectedFunctionNode = async (sourceNode: Node) => {
   const newNode = pipelineStore.createNode('function', `function-${pipelineStore.nodes.length}`, {
@@ -140,19 +138,9 @@ const executeCommand = (command: string) => {
   isCommandPaletteOpen.value = false
 
   if (command === 'add-json-data') {
-    const newNode = createNode('data', 'data.json', undefined, pipelineStore.value.nodes)
-    pipelineStore.value.nodes.push(newNode)
+    const newNode = pipelineStore.createNode('data', 'data.json')
+    pipelineStore.addNode(newNode)
   }
-}
-
-const getNodeOutputPosition = (nodeId: string): Point => {
-  const { x, y, width, height } = (pipelineStore.getNodeById(nodeId) as Node).position
-  return { x: x + width, y: y + height / 2 }
-}
-const getNodeInputPosition = (nodeId: string): Point => {
-  const { x, y, height } = (pipelineStore.getNodeById(nodeId) as Node).position
-
-  return { x: x, y: y + height / 2 }
 }
 </script>
 
@@ -163,16 +151,19 @@ const getNodeInputPosition = (nodeId: string): Point => {
     v-drag="canvasDragHandler"
     v-wheel="canvasZoomHandler"
     class="absolute inset-0 overflow-hidden w-screen h-screen"
-    :class="{ 'cursor-crosshair': editorMode === 'add' }"
+    :class="{
+      'cursor-crosshair': editorMode === 'add',
+      'select-none': selection !== null,
+    }"
   >
     <div
       v-if="selection"
       class="bg-blue-300/50 absolute z-20"
       :style="{
-        left: `${selection.width >= 0 ? selection.x : selection.x + selection.width}px`,
-        top: `${selection.height >= 0 ? selection.y : selection.y + selection.height}px`,
-        width: `${Math.abs(selection.width)}px`,
-        height: `${Math.abs(selection.height)}px`,
+        left: `${normalizedSelection?.x}px`,
+        top: `${normalizedSelection?.y}px`,
+        width: `${normalizedSelection?.width}px`,
+        height: `${normalizedSelection?.height}px`,
       }"
     ></div>
 
@@ -181,11 +172,7 @@ const getNodeInputPosition = (nodeId: string): Point => {
       <!-- Edges -->
       <!-- left-[2px] is hack you fix border size of node-->
       <svg class="absolute left-[2px] z-10 overflow-visible w-screen h-screen pointer-events-none">
-        <Edge
-          v-for="{ source, target } in pipelineStore.edges"
-          :from="getNodeOutputPosition(source)"
-          :to="getNodeInputPosition(target)"
-        />
+        <NodeEdge v-for="{ source, target } in pipelineStore.edges" :source="source" :target="target" />
       </svg>
 
       <div :class="{ 'pointer-events-none': editorMode === 'add' }">

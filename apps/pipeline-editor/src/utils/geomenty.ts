@@ -1,4 +1,5 @@
 import { isRangesIntersect, Range } from './range'
+import { applyToPoint, Matrix } from 'transformation-matrix'
 
 export type Rect = { x: number; y: number; width: number; height: number }
 
@@ -48,3 +49,19 @@ export const findYPosition = (x: number, approximateY: number, width: number, he
     ? freeYPositionOnTop.start
     : freeYPositionOnBottom.start
 }
+
+/**
+ * If `rect` width or height of rect is less than `0` this function recalculate x and y position.
+ */
+export const normalizeRect = ({ x, y, width, height }: Rect): Rect => ({
+  x: width >= 0 ? x : x + width,
+  y: height >= 0 ? y : y + height,
+  height: Math.abs(height),
+  width: Math.abs(width),
+})
+
+export const transformRect = (matrix: Matrix, rect: Rect): Rect => ({
+  ...applyToPoint(matrix, rect),
+  width: rect.width * matrix.a,
+  height: rect.height * matrix.a,
+})
