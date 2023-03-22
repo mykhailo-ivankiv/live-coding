@@ -77,7 +77,7 @@ export const usePipelineStore = defineStore('PipelineStore', () => {
       position: {
         x: position?.x ?? 0,
         y:
-          position?.strict === false
+          !position || position?.strict === false
             ? findYPosition(
                 position?.x ?? 0,
                 position?.y ?? 0,
@@ -85,7 +85,7 @@ export const usePipelineStore = defineStore('PipelineStore', () => {
                 position?.height ?? 124,
                 nodes.value.map((node) => node.position),
               )
-            : position?.y,
+            : position?.y ?? 0,
         width: position?.width ?? 380,
         height: position?.height ?? 124,
       },

@@ -96,11 +96,19 @@ app.put('/pipelines/:pipelineId', async (req, res) => {
 
   await Promise.all(
     pipeline.nodes.map(async (node: any) => {
+      if (!node.source && node.type === 'data') {
+        node.source = `${node.id}.json`
+        return fs.writeFile(`./sources/${pipelineId}/${node.source}`, 'null')
+      }
+
       if (!node.source && node.type === 'function') {
         node.source = `${node.id}.js`
         node.cache = `${node.source}.cache`
-        await fs.writeFile(`./sources/${pipelineId}/${node.source}`, 'export default (data) => data')
-        await fs.writeFile(`./sources/${pipelineId}/${node.source}.cache`, '')
+
+        return Promise.all([
+          fs.writeFile(`./sources/${pipelineId}/${node.source}`, 'export default (data) => data'),
+          fs.writeFile(`./sources/${pipelineId}/${node.source}.cache`, ''),
+        ])
       }
     }),
   )

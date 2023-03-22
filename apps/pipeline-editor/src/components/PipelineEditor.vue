@@ -18,10 +18,21 @@ pipelineStore.init(pipelineListStore.getPipelineById('pipeline-1'))
 
 const matrix = ref(translate(400, 200))
 const editorMode = ref<'navigate' | 'add'>('navigate')
+const selectedNodes = ref<string[]>([])
+const selection = ref<Rect | null>(null)
+const normalizedSelection = computed<Rect | null>(() => selection.value && normalizeRect(selection.value))
 
 document.addEventListener(
   'keydown',
   (e) => {
+    if (editorMode.value === 'add' && e.key === 'Escape') {
+      e.preventDefault()
+      e.stopPropagation()
+
+      editorMode.value = 'navigate'
+      return
+    }
+
     if (e.key === '/') {
       e.preventDefault()
       e.stopPropagation()
@@ -47,9 +58,6 @@ document.addEventListener(
 const handleCanvasDrag = ({ delta: [x, y] }: DragState) => {
   matrix.value = compose(translate(x, y), matrix.value)
 }
-
-const selectedNodes = ref<string[]>([])
-
 const handleSelection = ({ delta: [x, y], xy, first, last }: DragState) => {
   if (first) {
     selection.value = { x: xy[0], y: xy[1], width: 0, height: 0 }
@@ -91,9 +99,6 @@ const canvasZoomHandler = ({ event, delta }) => {
 
   matrix.value = compose(scale(zoom, zoom, event.x, event.y), matrix.value)
 }
-
-const selection = ref<Rect | null>(null)
-const normalizedSelection = computed<Rect | null>(() => selection.value && normalizeRect(selection.value))
 
 const createConnectedFunctionNode = async (sourceNode: Node) => {
   const newNode = pipelineStore.createNode('function', `function-${pipelineStore.nodes.length}`, {
@@ -168,10 +173,9 @@ const executeCommand = (command: string) => {
     ></div>
 
     <!-- Canvas -->
-    <div :style="`transform: ${toCSS(matrix)}`" class="h-0 w-0">
+    <div :style="{ transform: toCSS(matrix) }" class="h-0 w-0">
       <!-- Edges -->
-      <!-- left-[2px] is hack you fix border size of node-->
-      <svg class="absolute left-[2px] z-10 overflow-visible w-screen h-screen pointer-events-none">
+      <svg class="absolute z-10 overflow-visible w-screen h-screen pointer-events-none">
         <NodeEdge v-for="{ source, target } in pipelineStore.edges" :source="source" :target="target" />
       </svg>
 
