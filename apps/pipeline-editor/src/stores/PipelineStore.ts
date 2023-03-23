@@ -70,6 +70,13 @@ export const usePipelineStore = defineStore('PipelineStore', () => {
       target: targetNodeId,
     }),
 
+    updateNode: async (node: Node) => {
+      const nodeIndex = nodes.value.find(({ id }) => node.id)
+
+      nodes.value[nodeIndex] = node;
+      return syncWithServer();
+    },
+
     createNode: (type: Node['type'], title: string, position?: Rect & { strict?: false }): Node => ({
       id: uuidv4(),
       type,

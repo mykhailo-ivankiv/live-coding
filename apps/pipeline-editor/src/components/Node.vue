@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { defineProps } from 'vue'
+import { defineProps, ref } from 'vue'
 import { Matrix } from 'transformation-matrix'
-import { DragState } from '@vueuse/gesture'
+import { DragState, useDrag } from '@vueuse/gesture'
 import { Node } from '@live/pipeline-types'
 import SelectNodeType from './SelectNodeType.vue'
 
@@ -12,9 +12,15 @@ const props = defineProps<{
   isSelected: boolean
 }>()
 
-const emit = defineEmits(['addNode', 'changePosition'])
+const emit = defineEmits(['addNode', 'changePosition', 'change'])
 
-const nodeDragHandler = ({ delta }: DragState) => {
+const nodeDragHandler = ({ delta, event, cancel, canceled, first, last }: DragState) => {
+  // TODO: fix it;
+  if (event.target.matches('input, ul, li')) {
+    cancel()
+    return
+  }
+
   emit('changePosition', props.node.id, {
     x: props.node.position.x + delta[0] / props.matrix.a,
     y: props.node.position.y + delta[1] / props.matrix.a,
@@ -22,11 +28,21 @@ const nodeDragHandler = ({ delta }: DragState) => {
     height: props.node.position.height,
   })
 }
+const root = ref()
+useDrag(nodeDragHandler, { domTarget: root, enabled: true, capture: true })
+
+const setNodeType = (command: string) => {
+  if (command === 'json-data') {
+    props.node.type = 'data'
+    props.node.position.height = 124
+    emit('change', props.node)
+  }
+}
 </script>
 
 <template>
   <div
-    v-drag="nodeDragHandler"
+    ref="root"
     class="absolute z-20 box-border rounded-md border-2 bg-white flex flex-col align-content-stretch"
     :class="isSelected ? 'border-blue-700 shadow shadow-blue-300' : 'border-gray-700'"
     :key="node.id"
@@ -38,7 +54,7 @@ const nodeDragHandler = ({ delta }: DragState) => {
     }"
   >
     <template v-if="node.type === undefined">
-      <SelectNodeType />
+      <SelectNodeType @change="setNodeType" />
     </template>
 
     <template v-else>

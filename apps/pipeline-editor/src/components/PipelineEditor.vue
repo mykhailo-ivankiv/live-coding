@@ -25,6 +25,8 @@ const normalizedSelection = computed<Rect | null>(() => selection.value && norma
 document.addEventListener(
   'keydown',
   (e) => {
+    if (e.target.matches('input, textarea')) return
+
     if (editorMode.value === 'add' && e.key === 'Escape') {
       e.preventDefault()
       e.stopPropagation()
@@ -64,6 +66,8 @@ const handleSelection = ({ delta: [x, y], xy, first, last }: DragState) => {
     return
   }
 
+  if (!selection.value) return
+
   if (last) {
     const inverseMatrix = inverse(matrix.value)
     const selectionRectangle = transformRect(inverseMatrix, normalizedSelection.value as Rect)
@@ -81,9 +85,9 @@ const handleSelection = ({ delta: [x, y], xy, first, last }: DragState) => {
 }
 
 const canvasDragHandler = (dragState: DragState) => {
-  if (editorMode.value !== 'navigate') return
-
   const { metaKey, ctrlKey, event } = dragState
+
+  if (editorMode.value !== 'navigate') return
   if (event.target !== event.currentTarget) return
 
   if (metaKey || ctrlKey) return handleCanvasDrag(dragState)
@@ -181,13 +185,14 @@ const executeCommand = (command: string) => {
 
       <div :class="{ 'pointer-events-none': editorMode === 'add' }">
         <DataNode
-          :pipelineId="pipelineStore.id"
           v-for="node in pipelineStore.nodes"
+          :pipelineId="pipelineStore.id"
           :key="node.id"
           :node="node"
           :matrix="matrix"
           :isSelected="selectedNodes.includes(node.id)"
           @addNode="createConnectedFunctionNode"
+          @change="pipelineStore.updateNode"
           @changePosition="pipelineStore.changeNodePosition"
         />
       </div>

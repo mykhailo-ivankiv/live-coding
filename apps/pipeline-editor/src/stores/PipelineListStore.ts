@@ -1,6 +1,6 @@
 import { defineStore, acceptHMRUpdate } from 'pinia'
 import { Pipeline } from '@live/pipeline-types'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive } from 'vue'
 
 export const usePipelineListStore = defineStore('PipelinesListStore', () => {
   const pipelines = reactive<Pipeline[]>([])
