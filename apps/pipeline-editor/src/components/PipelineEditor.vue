@@ -191,7 +191,7 @@ const executeCommand = (command: string) => {
           :node="node"
           :matrix="matrix"
           :isSelected="selectedNodes.includes(node.id)"
-          @addNode="createConnectedFunctionNode"
+          @addNodeOutputConnector="createConnectedFunctionNode"
           @change="pipelineStore.updateNode"
           @changePosition="pipelineStore.changeNodePosition"
         />
