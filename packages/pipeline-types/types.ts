@@ -8,4 +8,9 @@ export type Node = {
   title: string
 }
 export type Edge = { id: string; source: string; target: string }
-export type Pipeline = { id: string; nodes: Node[]; edges: Edge[] }
+export type Pipeline = {
+  id: string
+  title: string
+  nodes: Node[]
+  edges: Edge[]
+}

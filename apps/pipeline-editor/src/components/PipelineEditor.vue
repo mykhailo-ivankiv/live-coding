@@ -1,20 +1,36 @@
 <script setup lang="ts">
-import { translate, toCSS, compose, scale, inverse, applyToPoint, Point } from 'transformation-matrix'
-import { computed, ref } from 'vue'
+import { translate, toCSS, compose, scale, inverse, applyToPoint } from 'transformation-matrix'
+import { computed, ref, watch } from 'vue'
 import NodeEdge from './NodeEdge.vue'
 import DataNode from './Node.vue'
 import { isRectsIntersect, normalizeRect, Rect, transformRect } from '../utils/geomenty'
-import { DragState } from '@vueuse/gesture'
+import { DragState, useDrag, useWheel } from '@vueuse/gesture'
 import { Node } from '@live/pipeline-types'
 import CommandPalette from './CommandPalette.vue'
 import { usePipelineListStore } from '../stores/PipelineListStore'
 import { usePipelineStore } from '../stores/PipelineStore'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+const pipelineId = route.params.pipelineId
 
 const pipelineListStore = usePipelineListStore()
 await pipelineListStore.fetchPipelines()
 
 const pipelineStore = usePipelineStore()
-pipelineStore.init(pipelineListStore.getPipelineById('pipeline-1'))
+
+pipelineStore.init(pipelineListStore.getPipelineById(pipelineId))
+
+const expandedNodeId = route.params.nodeId
+const expandedNode = ref(expandedNodeId ? pipelineStore.getNodeById(expandedNodeId) : null)
+
+watch(
+  () => route.params.nodeId,
+  () => {
+    const expandedNodeId = route.params.nodeId
+    expandedNode.value = expandedNodeId ? pipelineStore.getNodeById(expandedNodeId) : null
+  },
+)
 
 const matrix = ref(translate(400, 200))
 const editorMode = ref<'navigate' | 'add'>('navigate')
@@ -25,6 +41,7 @@ const normalizedSelection = computed<Rect | null>(() => selection.value && norma
 document.addEventListener(
   'keydown',
   (e) => {
+    // TODO: fixit!
     if (e.target.matches('input, textarea')) return
 
     if (editorMode.value === 'add' && e.key === 'Escape') {
@@ -94,7 +111,7 @@ const canvasDragHandler = (dragState: DragState) => {
   return handleSelection(dragState)
 }
 
-const canvasZoomHandler = ({ event, delta }) => {
+const canvasZoomHandler = ({ event, delta }: DragState) => {
   const zoom = 1 + delta[1] / 1000
 
   // matrix.current.a === zoom
@@ -151,14 +168,25 @@ const executeCommand = (command: string) => {
     pipelineStore.addNode(newNode)
   }
 }
+
+const root = ref<HTMLDivElement>()
+
+useDrag(canvasDragHandler, { domTarget: root })
+useWheel(canvasZoomHandler, { domTarget: root })
+
+const expandedNodeMargins = {
+  top: 10,
+  bottom: 10,
+  left: 420,
+  right: 20,
+}
 </script>
 
 <template>
   <CommandPalette :is-open="isCommandPaletteOpen" @close="isCommandPaletteOpen = false" @change="executeCommand" />
   <div
     @click="handleCanvasClick"
-    v-drag="canvasDragHandler"
-    v-wheel="canvasZoomHandler"
+    ref="root"
     class="absolute inset-0 overflow-hidden w-screen h-screen"
     :class="{
       'cursor-crosshair': editorMode === 'add',
@@ -177,24 +205,56 @@ const executeCommand = (command: string) => {
     ></div>
 
     <!-- Canvas -->
-    <div :style="{ transform: toCSS(matrix) }" class="h-0 w-0">
+    <div
+      class="h-0 w-0"
+      :style="{
+        transform: toCSS(
+          expandedNode
+            ? translate(
+                -expandedNode.position.x + expandedNodeMargins.left,
+                -expandedNode.position.y + expandedNodeMargins.top,
+              )
+            : matrix,
+        ),
+      }"
+    >
       <!-- Edges -->
       <svg class="absolute z-10 overflow-visible w-screen h-screen pointer-events-none">
         <NodeEdge v-for="{ source, target } in pipelineStore.edges" :source="source" :target="target" />
       </svg>
 
-      <div :class="{ 'pointer-events-none': editorMode === 'add' }">
-        <DataNode
-          v-for="node in pipelineStore.nodes"
-          :pipelineId="pipelineStore.id"
-          :key="node.id"
-          :node="node"
-          :matrix="matrix"
-          :isSelected="selectedNodes.includes(node.id)"
-          @addNodeOutputConnector="createConnectedFunctionNode"
-          @change="pipelineStore.updateNode"
-          @changePosition="pipelineStore.changeNodePosition"
-        />
+      <div
+        v-if="root"
+        :class="{
+          'pointer-events-none': editorMode === 'add',
+        }"
+      >
+        <div v-for="node in pipelineStore.nodes" class="relative" :class="{ 'z-50': expandedNode?.id === node.id }">
+          <DataNode
+            :position="{
+              x: node.position.x,
+              y: node.position.y,
+              width:
+                expandedNode?.id === node.id
+                  ? root.getBoundingClientRect().width - (expandedNodeMargins.left + expandedNodeMargins.right)
+                  : node.position.width,
+              height:
+                expandedNode?.id === node.id
+                  ? root.getBoundingClientRect().height - (expandedNodeMargins.top + expandedNodeMargins.bottom)
+                  : node.position.height,
+            }"
+            :isExpanded="expandedNode?.id === node.id"
+            :pipelineId="pipelineStore.id"
+            :key="node.id"
+            :node="node"
+            :matrix="matrix"
+            :isSelected="selectedNodes.includes(node.id)"
+            @addNodeOutputConnector="createConnectedFunctionNode"
+            @change="pipelineStore.updateNode"
+            @changePosition="pipelineStore.changeNodePosition"
+            @expand=""
+          />
+        </div>
       </div>
     </div>
   </div>

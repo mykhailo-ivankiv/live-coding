@@ -1,15 +1,16 @@
 import { defineStore, acceptHMRUpdate } from 'pinia'
 import { Pipeline } from '@live/pipeline-types'
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 export const usePipelineListStore = defineStore('PipelinesListStore', () => {
-  const pipelines = reactive<Pipeline[]>([])
+  const pipelines = ref<Pipeline[]>([])
 
   const fetchPipelines = async () => {
-    pipelines.push(await (await fetch('http://localhost:3000/pipelines/pipeline-1')).json())
+    const data = await (await fetch('http://localhost:3000/pipelines/pipeline-1')).json()
+    pipelines.value = [data]
   }
 
-  const getPipelineById = computed(() => (id: string) => pipelines.find((pipeline) => pipeline.id === id))
+  const getPipelineById = computed(() => (id: string) => pipelines.value.find((pipeline) => pipeline.id === id))
 
   return { getPipelineById, pipelines, fetchPipelines }
 })

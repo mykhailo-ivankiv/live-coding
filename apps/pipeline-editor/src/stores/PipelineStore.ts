@@ -20,6 +20,7 @@ export const usePipelineStore = defineStore('PipelineStore', () => {
   })
 
   const changeNodePosition = (nodeId: string, position: Rect) => {
+    console.log("change position")
     const node = getNodeById.value(nodeId)
     if (node) node.position = position
   }

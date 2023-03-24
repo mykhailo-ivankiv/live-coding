@@ -1,5 +1,6 @@
 {
   "id": "pipeline-1",
+  "title": "Example pipeline with function",
   "nodes": [
     {
       "id": "node-0",

@@ -4,16 +4,24 @@ import { Matrix } from 'transformation-matrix'
 import { DragState, useDrag } from '@vueuse/gesture'
 import { Node } from '@live/pipeline-types'
 import SelectNodeType from './SelectNodeType.vue'
-import { PlusCircleIcon, ArrowRightCircleIcon } from '@heroicons/vue/24/outline'
+import {
+  PlusCircleIcon,
+  ArrowRightCircleIcon,
+  ArrowTopRightOnSquareIcon,
+  ArrowDownLeftIcon,
+} from '@heroicons/vue/24/outline'
+import { Rect } from '../utils/geomenty'
 
 const props = defineProps<{
+  position: Rect
   pipelineId: string
   node: Node
   matrix: Matrix
   isSelected: boolean
+  isExpanded: boolean
 }>()
 
-const emit = defineEmits(['addNodeOutputConnector', 'changePosition', 'change', 'addNodeInputConnector'])
+const emit = defineEmits(['addNodeOutputConnector', 'addNodeInputConnector', 'changePosition', 'change', 'expand'])
 
 const nodeDragHandler = ({ delta, event, cancel, canceled, first, last }: DragState) => {
   // TODO: fix it;
@@ -21,16 +29,17 @@ const nodeDragHandler = ({ delta, event, cancel, canceled, first, last }: DragSt
     cancel()
     return
   }
+  if (props.isExpanded) return
 
   emit('changePosition', props.node.id, {
-    x: props.node.position.x + delta[0] / props.matrix.a,
-    y: props.node.position.y + delta[1] / props.matrix.a,
-    width: props.node.position.width,
-    height: props.node.position.height,
+    x: props.position.x + delta[0] / props.matrix.a,
+    y: props.position.y + delta[1] / props.matrix.a,
+    width: props.position.width,
+    height: props.position.height,
   })
 }
 const root = ref()
-useDrag(nodeDragHandler, { domTarget: root, enabled: true, capture: true })
+useDrag(nodeDragHandler, { domTarget: root, enabled: !props.isExpanded, capture: true, delay: true })
 
 const setNodeType = (command: string) => {
   if (command === 'json-data') {
@@ -48,10 +57,10 @@ const setNodeType = (command: string) => {
     :class="isSelected ? 'border-blue-700 shadow shadow-blue-300' : 'border-gray-700'"
     :key="node.id"
     :style="{
-      left: `${node.position.x}px`,
-      top: `${node.position.y}px`,
-      width: `${node.position.width}px`,
-      height: `${node.cache ? node.position.height : node.position.height}px`,
+      left: `${position.x}px`,
+      top: `${position.y}px`,
+      width: `${position.width}px`,
+      height: `${node.cache ? position.height : position.height}px`,
     }"
   >
     <template v-if="node.type === undefined">
@@ -73,7 +82,14 @@ const setNodeType = (command: string) => {
       >
         <ArrowRightCircleIcon class="w-6 h-6 fill-white stroke-current" />
       </button>
-      <div class="py-1 px-2 pl-4 border-b-2">{{ node.title }}</div>
+
+      <div class="py-1 px-2 pl-4 border-b-2 flex justify-between">
+        {{ node.title }}
+        <RouterLink :to="isExpanded ? `/${pipelineId}` : `/${pipelineId}/${node.id}`">
+          <ArrowDownLeftIcon v-if="isExpanded" class="w-4 h-4 fill-white stroke-current" />
+          <ArrowTopRightOnSquareIcon v-else class="w-4 h-4 fill-white stroke-current" />
+        </RouterLink>
+      </div>
       <!--
         Using css transform results in incorrect tooltip positioning
         https://github.com/codemirror/dev/issues/324
