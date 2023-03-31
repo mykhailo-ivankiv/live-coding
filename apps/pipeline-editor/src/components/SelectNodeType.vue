@@ -5,6 +5,7 @@ import { Combobox, ComboboxInput, ComboboxOptions, ComboboxOption, ComboboxButto
 const emit = defineEmits(['change'])
 const nodeTypes = [
   { id: 'json-data', tags: ['data'], title: '.json data node' },
+  { id: 'data-by-url', title: 'Public data by url' },
   { id: 'google-spreadsheet-connector', tags: ['data'], title: 'Google spreadsheet adapter' },
 ]
 const selectedNode = ref('')

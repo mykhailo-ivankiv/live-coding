@@ -20,7 +20,6 @@ export const usePipelineStore = defineStore('PipelineStore', () => {
   })
 
   const changeNodePosition = (nodeId: string, position: Rect) => {
-    console.log("change position")
     const node = getNodeById.value(nodeId)
     if (node) node.position = position
   }
@@ -74,8 +73,8 @@ export const usePipelineStore = defineStore('PipelineStore', () => {
     updateNode: async (node: Node) => {
       const nodeIndex = nodes.value.find(({ id }) => node.id)
 
-      nodes.value[nodeIndex] = node;
-      return syncWithServer();
+      nodes.value[nodeIndex] = node
+      return syncWithServer()
     },
 
     createNode: (type: Node['type'], title: string, position?: Rect & { strict?: false }): Node => ({

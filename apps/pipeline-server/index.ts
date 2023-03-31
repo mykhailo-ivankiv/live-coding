@@ -101,6 +101,22 @@ app.put('/pipelines/:pipelineId', async (req, res) => {
         return fs.writeFile(`./sources/${pipelineId}/${node.source}`, 'null')
       }
 
+      if (!node.source && node.type === 'data-by-url') {
+        node.cache = `${node.id}.json.cache`
+
+        try {
+          const data = await (await fetch(node.dataUrl)).json()
+
+          return fs.writeFile(`./sources/${pipelineId}/${node.cache}`, JSON.stringify(data, null, 2))
+        } catch (err) {
+          console.log(err)
+          return fs.writeFile(
+            `./sources/${pipelineId}/${node.cache}`,
+            JSON.stringify('Fetch error probably you set wrong url'),
+          )
+        }
+      }
+
       if (!node.source && node.type === 'function') {
         node.source = `${node.id}.js`
         node.cache = `${node.source}.cache`

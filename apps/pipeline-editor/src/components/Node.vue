@@ -23,7 +23,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['addNodeOutputConnector', 'addNodeInputConnector', 'changePosition', 'change', 'expand'])
 
-const nodeDragHandler = ({ delta, event, cancel, canceled, first, last }: DragState) => {
+const nodeDragHandler = ({ delta, event, cancel }: DragState) => {
   // TODO: fix it;
   if (event.target.matches('input, ul, li')) {
     cancel()
@@ -41,9 +41,17 @@ const nodeDragHandler = ({ delta, event, cancel, canceled, first, last }: DragSt
 const root = ref()
 useDrag(nodeDragHandler, { domTarget: root, enabled: !props.isExpanded, capture: true, delay: true })
 
-const setNodeType = (command: string) => {
+const setNodeType = async (command: string) => {
   if (command === 'json-data') {
     props.node.type = 'data'
+    props.node.position.height = 124
+    emit('change', props.node)
+  }
+
+  if (command === 'data-by-url') {
+    props.node.type = 'data-by-url'
+    props.node.dataUrl = 'https://swapi.dev/api/people'
+    props.node.title = 'Get data from public url'
     props.node.position.height = 124
     emit('change', props.node)
   }
@@ -53,7 +61,7 @@ const setNodeType = (command: string) => {
 <template>
   <div
     ref="root"
-    class="absolute z-20 box-border rounded-md border-2 bg-white flex flex-col align-content-stretch"
+    class="absolute z-20 box-border rounded-md border-2 bg-white flex flex-col align-content-stretch divide-y divide-gray-200"
     :class="isSelected ? 'border-blue-700 shadow shadow-blue-300' : 'border-gray-700'"
     :key="node.id"
     :style="{
@@ -65,6 +73,33 @@ const setNodeType = (command: string) => {
   >
     <template v-if="node.type === undefined">
       <SelectNodeType @change="setNodeType" />
+    </template>
+
+    <template v-else-if="node.type === 'data-by-url'">
+      <button
+        class="absolute top-1/2 -right-4 transform -translate-y-1/2"
+        @click="emit('addNodeOutputConnector', node)"
+      >
+        <ArrowRightCircleIcon class="w-6 h-6 fill-white stroke-current" />
+      </button>
+
+      <div class="py-1 px-2 pl-4 flex justify-between">
+        {{ node.title }}
+        <RouterLink :to="isExpanded ? `/${pipelineId}` : `/${pipelineId}/${node.id}`">
+          <ArrowDownLeftIcon v-if="isExpanded" class="w-4 h-4 fill-white stroke-current" />
+          <ArrowTopRightOnSquareIcon v-else class="w-4 h-4 fill-white stroke-current" />
+        </RouterLink>
+      </div>
+
+      <div>
+        <input
+          placeholder="Data url"
+          class="bg-transparent focus-within:outline-none h-9 w-full px-2"
+          type="text"
+          v-model="node.dataUrl"
+        />
+      </div>
+      <iframe v-if="node.cache" class="border-t h-full w-full" :src="`/view/${pipelineId}/${node.cache}`" />
     </template>
 
     <template v-else>
@@ -83,25 +118,22 @@ const setNodeType = (command: string) => {
         <ArrowRightCircleIcon class="w-6 h-6 fill-white stroke-current" />
       </button>
 
-      <div class="py-1 px-2 pl-4 border-b-2 flex justify-between">
+      <div class="py-1 px-2 pl-4 flex justify-between">
         {{ node.title }}
         <RouterLink :to="isExpanded ? `/${pipelineId}` : `/${pipelineId}/${node.id}`">
           <ArrowDownLeftIcon v-if="isExpanded" class="w-4 h-4 fill-white stroke-current" />
           <ArrowTopRightOnSquareIcon v-else class="w-4 h-4 fill-white stroke-current" />
         </RouterLink>
       </div>
-      <!--
-        Using css transform results in incorrect tooltip positioning
-        https://github.com/codemirror/dev/issues/324
-      -->
-      <div class="flex-1 overflow-hidden">
+      <!-- Using css transform results in incorrect tooltip positioning https://github.com/codemirror/dev/issues/324 -->
+      <div class="flex-1 overflow-auto">
         <iframe v-if="node.source" class="h-full w-full" :src="`/edit/${pipelineId}/${node.source}`" />
       </div>
 
       <!-- <JsonEditor v-if="node?.type === 'data'" />-->
       <!-- <JavascriptEditor v-else-if="node?.type === 'function'" />-->
 
-      <iframe v-if="node.cache" class="border-t h-8 w-full" :src="`/view/${pipelineId}/${node.cache}`" />
+      <iframe v-if="node.cache" class="h-8 w-full" :src="`/view/${pipelineId}/${node.cache}`" />
     </template>
   </div>
 </template>
