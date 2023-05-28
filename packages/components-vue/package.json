@@ -13,11 +13,11 @@
     "@live/date-utils": "workspace:^1.0.0",
     "@live/parser-utils": "workspace:^0.0.0",
     "arcsecond": "^5.0.0",
-    "date-fns": "^2.29.3",
-    "ramda": "^0.28.0",
-    "vue": "^3.2.47"
+    "date-fns": "^2.30.0",
+    "ramda": "^0.29.0",
+    "vue": "^3.3.4"
   },
   "devDependencies": {
-    "@types/ramda": "^0.28.23"
+    "@types/ramda": "^0.29.2"
   }
 }

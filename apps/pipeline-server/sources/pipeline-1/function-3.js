@@ -1,1 +1,0 @@
-export default b => b.map(b => b * b);

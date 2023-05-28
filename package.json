@@ -11,7 +11,7 @@
   "license": "ISC",
   "devDependencies": {
     "@live/create-app": "workspace:^1.0.0",
-    "@nrwl/nx-cloud": "^15.2.3"
+    "@nrwl/nx-cloud": "^16.0.5"
   },
   "private": true
 }

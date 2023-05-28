@@ -8,9 +8,9 @@
     "test": "vitest run --coverage"
   },
   "devDependencies": {
-    "@vitest/coverage-c8": "^0.29.5",
-    "typescript": "5.0.2",
-    "vitest": "^0.29.5"
+    "@vitest/coverage-c8": "^0.31.1",
+    "typescript": "5.0.4",
+    "vitest": "^0.31.1"
   },
   "dependencies": {
     "arcsecond": "^5.0.0"

@@ -21,15 +21,15 @@
   },
   "dependencies": {
     "cross-spawn": "^7.0.3",
-    "kolorist": "^1.7.0",
+    "kolorist": "^1.8.0",
     "minimist": "^1.2.8",
     "prompts": "^2.4.2",
-    "unbuild": "^1.1.2"
+    "unbuild": "^1.2.1"
   },
   "devDependencies": {
     "@types/cross-spawn": "^6.0.2",
     "@types/minimist": "^1.2.2",
-    "@types/node": "^18.15.3",
-    "@types/prompts": "^2.4.3"
+    "@types/node": "^20.2.5",
+    "@types/prompts": "^2.4.4"
   }
 }
